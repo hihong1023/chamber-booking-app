@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chamber Booking System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Chamber Booking Calendar</h1>
+<div class="controls">
+    <button id="prevMonth">◀ Prev</button>
+    <div class="month-group">
+        <select id="monthSelect"></select>
+        <button onclick="openManualPopup()">+ Add Booking</button>
+        <button onclick="openViewBookings()">📄 View/Edit Bookings</button>
+    </div>
+    <button id="nextMonth">Next ▶</button>
+</div>
+<div id="calendar"></div>
+<div class="overlay" id="overlay"></div>
+
+<!-- Popup for Drag Booking -->
+<div class="popup" id="popup">
+    <h3>New Booking</h3>
+    <input type="text" id="projectName" placeholder="Project Name">
+    <input type="text" id="pic" placeholder="Person in Charge (PIC)">
+    <input type="color" id="color" value="#4caf50">
+    <button onclick="saveBooking()">Save Booking</button>
+    <button onclick="closePopup()">Cancel</button>
+</div>
+
+<!-- Popup for Manual Booking -->
+<div class="manual-popup" id="manualPopup">
+    <h3>Manually Add Booking</h3>
+    <label for="manualChamber">Chamber:</label>
+    <select id="manualChamber">
+        <option value="1">Chamber 1</option>
+        <option value="2">Chamber 2</option>
+        <option value="3">Chamber 3</option>
+    </select>
+    <label for="manualStart">Start Date:</label>
+    <input type="date" id="manualStart">
+    <label for="manualEnd">End Date:</label>
+    <input type="date" id="manualEnd">
+    <input type="text" id="manualProject" placeholder="Project Name">
+    <input type="text" id="manualPic" placeholder="Person in Charge (PIC)">
+    <input type="color" id="manualColor" value="#4caf50">
+    <button onclick="saveManualBooking()">Save Booking</button>
+    <button onclick="closeManualPopup()">Cancel</button>
+</div>
+
+<!-- Popup to View/Edit All Bookings -->
+<div class="view-bookings-popup" id="viewBookings">
+    <h3>View/Edit Bookings</h3>
+    <div id="bookingsList"></div>
+    <button onclick="closeViewBookings()" style="width:100%;margin-top:10px;">Close</button>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
