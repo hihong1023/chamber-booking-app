@@ -289,9 +289,14 @@ function saveManualBooking() {
         color: document.getElementById('manualColor').value
     };
 
-    // 🟢 Add this check to prevent invalid booking!
     if (new Date(booking.start) > new Date(booking.end)) {
         showTeamsNotification("Start date cannot be after end date.", "error");
+        return;
+    }
+
+    // 🟢 NEW: Overlap check comes BEFORE any booking is saved/confirmed
+    if (!isBookingValid(booking, editingBooking ? editingBooking.rowKey : null)) {
+        showTeamsNotification("Booking overlaps with another booking for this chamber.", "error");
         return;
     }
 
@@ -301,6 +306,7 @@ function saveManualBooking() {
         processSaveBooking(booking);
     }
 }
+
 
 
 async function processSaveBooking(booking) {
@@ -411,7 +417,9 @@ function displayAllBookings() {
         section.className = 'chamber-section';
         section.innerHTML = `<h4>Chamber ${chamber}</h4>`;
 
-        const chamberBookings = allBookings.filter(b => b.chamber == chamber);
+        const chamberBookings = allBookings
+            .filter(b => b.chamber == chamber)
+            .sort((a, b) => new Date(a.start) - new Date(b.start));
 
         if (chamberBookings.length === 0) {
             const emptyMsg = document.createElement('p');
