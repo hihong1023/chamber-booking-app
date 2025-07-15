@@ -20,8 +20,13 @@ document.getElementById('viewBookingsBtn').addEventListener('click', () => {
     displayAllBookings();
 });
 
+// 🎯 Refresh button
+document.getElementById('refreshBtn').addEventListener('click', () => {
+    fetchAndRenderBookings();
+});
+
 // 🎯 Close popups
-function closeManualPopup() {F
+function closeManualPopup() {
     document.getElementById('overlay').style.display = 'none';
     document.getElementById('manualPopup').style.display = 'none';
 }
@@ -34,19 +39,25 @@ function closePopup() {
     document.getElementById('popup').style.display = 'none';
     clearSelection();
 }
+function closeConfirm() {
+    document.getElementById('confirmBox').style.display = 'none';
+}
 
 // 🎯 Month navigation
 document.getElementById('prevMonth').addEventListener('click', () => {
     currentDate.setMonth(currentDate.getMonth() - 1);
+    updateMonthHeader();
     fetchHolidays(currentDate.getFullYear()).then(fetchAndRenderBookings);
 });
 document.getElementById('nextMonth').addEventListener('click', () => {
     currentDate.setMonth(currentDate.getMonth() + 1);
+    updateMonthHeader();
     fetchHolidays(currentDate.getFullYear()).then(fetchAndRenderBookings);
 });
 document.getElementById('monthSelect').addEventListener('change', (e) => {
     const [year, month] = e.target.value.split('-');
     currentDate = new Date(year, month - 1);
+    updateMonthHeader();
     fetchHolidays(currentDate.getFullYear()).then(fetchAndRenderBookings);
 });
 
@@ -90,6 +101,8 @@ function renderCalendar() {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
+    updateMonthHeader(); // 🆕 Update month header
+
     const monthSelect = document.getElementById('monthSelect');
     monthSelect.innerHTML = '';
     for (let y = year - 1; y <= year + 1; y++) {
@@ -127,7 +140,7 @@ function renderCalendar() {
             if (holiday) {
                 th.className = 'holiday-header';
             } else if (day.getDay() === 0 || day.getDay() === 6) {
-                th.className = 'weekend-header'; // 🆕 grey weekend header
+                th.className = 'weekend-header'; // 🆕 grey out Sat/Sun headers
             } else {
                 th.className = 'day-header';
             }
@@ -171,7 +184,6 @@ function applyBookingToCalendar(booking) {
     });
 }
 
-// 🎯 Display all bookings in popup
 function displayAllBookings() {
     const listDiv = document.getElementById('bookingsList');
     listDiv.innerHTML = ''; // Clear previous content
@@ -211,7 +223,6 @@ function displayAllBookings() {
     }
 }
 
-// 🎯 Save booking
 function saveManualBooking() {
     const booking = {
         chamber: document.getElementById('manualChamber').value,
@@ -238,10 +249,9 @@ function saveManualBooking() {
     .catch(err => alert("Error saving booking: " + err.message));
 }
 
-// 🎯 Delete booking
 function deleteBooking(index) {
-    const booking = allBookings[index];
-    if (confirm("Are you sure you want to delete this booking?")) {
+    showConfirm("Are you sure you want to delete this booking?", () => {
+        const booking = allBookings[index];
         fetch(`${apiBaseUrl}?rowKey=${booking.rowKey}`, {
             method: "DELETE"
         })
@@ -255,7 +265,7 @@ function deleteBooking(index) {
             displayAllBookings();
         })
         .catch(err => alert("Error deleting booking: " + err.message));
-    }
+    });
 }
 
 // 🎯 Drag to select cells
@@ -285,7 +295,7 @@ function endSelection() {
     const hasBookings = selectedCells.some(cell => cell.classList.contains('booking'));
 
     if (hasBookings) {
-        if (confirm("Do you want to delete all selected bookings?")) {
+        showConfirm("Do you want to delete all selected bookings?", () => {
             const bookingsToDelete = [];
 
             selectedCells.forEach(cell => {
@@ -309,11 +319,10 @@ function endSelection() {
                 )
             )
                 .then(() => {
-                    alert("Selected bookings deleted successfully.");
                     fetchAndRenderBookings();
                 })
                 .catch(err => alert("Error deleting one or more bookings: " + err.message));
-        }
+        });
         clearSelection();
         return;
     }
@@ -329,7 +338,6 @@ function endSelection() {
     document.getElementById('popup').style.display = 'block';
 }
 
-// 🎯 Save booking from drag popup
 function saveBooking() {
     const booking = {
         chamber: selectedCells[0].dataset.chamber,
@@ -363,20 +371,6 @@ function clearSelection() {
     });
     selectedCells = [];
 }
-// 🎯 Teams-friendly confirmation
-function showConfirm(message, onConfirm) {
-    const confirmBox = document.getElementById('confirmBox');
-    document.getElementById('confirmMessage').textContent = message;
-    confirmBox.style.display = 'block';
-
-    document.getElementById('confirmYes').onclick = function () {
-        confirmBox.style.display = 'none';
-        onConfirm();
-    }
-    document.getElementById('confirmNo').onclick = function () {
-        confirmBox.style.display = 'none';
-    }
-}
 
 // 🆕 Update Month Header
 function updateMonthHeader() {
@@ -387,8 +381,8 @@ function updateMonthHeader() {
 // 🎯 Singapore-safe date format (YYYY-MM-DD)
 function formatDate(date) {
     return date.getFullYear() + '-' +
-           String(date.getMonth() + 1).padStart(2, '0') + '-' +
-           String(date.getDate()).padStart(2, '0');
+        String(date.getMonth() + 1).padStart(2, '0') + '-' +
+        String(date.getDate()).padStart(2, '0');
 }
 
 // 🚀 On page load
