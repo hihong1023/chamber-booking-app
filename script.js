@@ -55,6 +55,10 @@ document.getElementById('viewBookingsBtn').addEventListener('click', () => {
 document.getElementById('refreshBtn').addEventListener('click', () => {
     fetchAndRenderBookings();
 });
+function updateMonthHeader() {
+    document.getElementById('currentMonth').textContent =
+        `${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()}`;
+}
 
 // ✅ Close popups
 function closeManualPopup() {
