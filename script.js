@@ -1,7 +1,5 @@
 let currentDate = new Date();
 let holidays = [];
-let isDragging = false;
-let selectedCells = [];
 let allBookings = [];
 let editingBooking = null; // Track edit mode
 
@@ -33,11 +31,6 @@ function closeManualPopup() {
 function closeViewBookings() {
     document.getElementById('overlay').style.display = 'none';
     document.getElementById('viewBookings').style.display = 'none';
-}
-function closePopup() {
-    document.getElementById('overlay').style.display = 'none';
-    document.getElementById('popup').style.display = 'none';
-    clearSelection();
 }
 function closeConfirm() {
     document.getElementById('confirmBox').style.display = 'none';
@@ -140,7 +133,7 @@ function renderCalendar() {
             if (holiday) {
                 th.className = 'holiday-header';
             } else if (day.getDay() === 0 || day.getDay() === 6) {
-                th.className = 'weekend-header'; // Grey out Sat/Sun
+                th.className = 'weekend-header';
             } else {
                 th.className = 'day-header';
             }
@@ -157,9 +150,6 @@ function renderCalendar() {
                 let cellDate = new Date(startDate.getTime() + i * 86400000);
                 cell.dataset.date = formatDate(cellDate);
                 cell.dataset.chamber = chamber;
-                cell.addEventListener('mousedown', () => startSelection(cell));
-                cell.addEventListener('mouseover', () => selectCell(cell));
-                cell.addEventListener('mouseup', endSelection);
                 row.appendChild(cell);
             }
             table.appendChild(row);
@@ -181,14 +171,6 @@ function applyBookingToCalendar(booking) {
             cell.style.backgroundColor = booking.color || '#4caf50';
             cell.innerHTML = `${booking.project}<br><small>${booking.pic}</small>`;
         }
-    });
-}
-
-// ✅ Holiday Check Utility
-function hasHolidayInRange(start, end) {
-    return holidays.some(h => {
-        const hDate = new Date(h.date);
-        return hDate >= new Date(start) && hDate <= new Date(end);
     });
 }
 
@@ -227,14 +209,6 @@ function saveManualBooking() {
         color: document.getElementById('manualColor').value
     };
 
-    if (hasHolidayInRange(booking.start, booking.end)) {
-        showConfirm("Your booking includes public holidays. Continue?", () => processSaveBooking(booking));
-    } else {
-        processSaveBooking(booking);
-    }
-}
-
-function processSaveBooking(booking) {
     if (!isBookingValid(booking, editingBooking ? editingBooking.rowKey : null)) {
         alert("Booking overlaps with another booking.");
         return;
@@ -287,173 +261,6 @@ function isBookingValid(newBooking, ignoreRowKey = null) {
         const existingEnd = new Date(existing.end);
 
         return (newStart <= existingEnd && newEnd >= existingStart);
-    });
-}
-
-// ✅ Drag booking save
-document.querySelector('#popup button:first-of-type').addEventListener('click', () => {
-    if (selectedCells.length === 0) {
-        alert("No dates selected for booking.");
-        return;
-    }
-
-    const booking = {
-        chamber: selectedCells[0].dataset.chamber,
-        start: selectedCells[0].dataset.date,
-        end: selectedCells[selectedCells.length - 1].dataset.date,
-        project: document.getElementById('projectName').value,
-        pic: document.getElementById('pic').value,
-        color: document.getElementById('color').value
-    };
-
-    if (hasHolidayInRange(booking.start, booking.end)) {
-        showConfirm("Your booking includes public holidays. Continue?", () => processSaveBooking(booking));
-    } else {
-        processSaveBooking(booking);
-    }
-});
-
-function endSelection() {
-    isDragging = false;
-    document.removeEventListener('mouseup', endSelection);
-
-    if (selectedCells.length === 0) return;
-
-    const bookingsToUpdate = [];
-
-    selectedCells.forEach(cell => {
-        const booking = allBookings.find(
-            b =>
-                b.chamber === cell.dataset.chamber &&
-                new Date(b.start) <= new Date(cell.dataset.date) &&
-                new Date(b.end) >= new Date(cell.dataset.date)
-        );
-        if (booking && !bookingsToUpdate.includes(booking)) {
-            bookingsToUpdate.push(booking);
-        }
-    });
-
-    if (bookingsToUpdate.length > 0) {
-        // 🟥 Drag-to-delete: split or trim
-        showConfirm("Delete selected dates?", () => {
-            bookingsToUpdate.forEach(b => {
-                const selectedDates = selectedCells
-                    .filter(c => c.dataset.chamber == b.chamber)
-                    .map(c => new Date(c.dataset.date));
-
-                const minDate = new Date(Math.min(...selectedDates));
-                const maxDate = new Date(Math.max(...selectedDates));
-
-                if (minDate > new Date(b.start) && maxDate < new Date(b.end)) {
-                    // Split booking into two
-                    const part1 = { ...b, end: formatDate(new Date(minDate.getTime() - 86400000)) };
-                    const part2 = { ...b, start: formatDate(new Date(maxDate.getTime() + 86400000)) };
-
-                    fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, { method: "DELETE" })
-                        .then(() => Promise.all([
-                            fetch(apiBaseUrl, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify(part1)
-                            }),
-                            fetch(apiBaseUrl, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify(part2)
-                            })
-                        ]));
-                } else if (minDate > new Date(b.start)) {
-                    // Trim end
-                    fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            ...b,
-                            end: formatDate(new Date(minDate.getTime() - 86400000))
-                        })
-                    });
-                } else if (maxDate < new Date(b.end)) {
-                    // Trim start
-                    fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            ...b,
-                            start: formatDate(new Date(maxDate.getTime() + 86400000))
-                        })
-                    });
-                } else {
-                    // Delete entire booking
-                    fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, { method: "DELETE" });
-                }
-            });
-            fetchAndRenderBookings();
-        });
-    } else {
-        // No existing booking, open create popup
-        document.getElementById('overlay').style.display = 'block';
-        document.getElementById('popup').style.display = 'block';
-    }
-
-    clearSelection();
-}
-
-function startSelection(cell) {
-    isDragging = true;
-    clearSelection();
-    selectCell(cell);
-    document.addEventListener('mouseup', endSelection);
-}
-
-function selectCell(cell) {
-    if (isDragging) {
-        if (cell.classList.contains('booking')) {
-            cell.classList.add('deleting'); // Highlight red
-        } else {
-            cell.classList.add('selecting'); // Highlight blue
-        }
-        selectedCells.push(cell);
-    }
-}
-
-function clearSelection() {
-    selectedCells.forEach(cell => {
-        cell.classList.remove('selecting');
-        cell.classList.remove('deleting');
-    });
-    selectedCells = [];
-}
-
-function updateMonthHeader() {
-    document.getElementById('currentMonth').textContent =
-        `${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()}`;
-}
-
-function formatDate(date) {
-    return date.getFullYear() + '-' +
-        String(date.getMonth() + 1).padStart(2, '0') + '-' +
-        String(date.getDate()).padStart(2, '0');
-}
-
-// ✅ Custom confirm box (Teams friendly)
-function showConfirm(message, onConfirm) {
-    const confirmBox = document.getElementById('confirmBox');
-    document.getElementById('confirmMessage').textContent = message;
-    confirmBox.style.display = 'block';
-
-    const yesBtn = document.getElementById('confirmYes');
-    const noBtn = document.getElementById('confirmNo');
-
-    // Remove old listeners to avoid duplicates
-    yesBtn.replaceWith(yesBtn.cloneNode(true));
-    noBtn.replaceWith(noBtn.cloneNode(true));
-
-    document.getElementById('confirmYes').addEventListener('click', () => {
-        confirmBox.style.display = 'none';
-        onConfirm();
-    });
-    document.getElementById('confirmNo').addEventListener('click', () => {
-        confirmBox.style.display = 'none';
     });
 }
 
@@ -511,6 +318,27 @@ function displayAllBookings() {
         }
         listDiv.appendChild(section);
     }
+}
+
+// ✅ Custom confirm box (Teams friendly)
+function showConfirm(message, onConfirm) {
+    const confirmBox = document.getElementById('confirmBox');
+    document.getElementById('confirmMessage').textContent = message;
+    confirmBox.style.display = 'block';
+
+    const yesBtn = document.getElementById('confirmYes');
+    const noBtn = document.getElementById('confirmNo');
+
+    yesBtn.replaceWith(yesBtn.cloneNode(true));
+    noBtn.replaceWith(noBtn.cloneNode(true));
+
+    document.getElementById('confirmYes').addEventListener('click', () => {
+        confirmBox.style.display = 'none';
+        onConfirm();
+    });
+    document.getElementById('confirmNo').addEventListener('click', () => {
+        confirmBox.style.display = 'none';
+    });
 }
 
 // 🚀 On page load
