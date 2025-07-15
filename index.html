@@ -55,6 +55,28 @@
     <button id="confirmNo">No</button>
 </div>
 
+<!-- ✅ Teams-style Toast Notification -->
+<div id="teamsNotification" style="
+  display:none; 
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  min-width: 250px;
+  max-width: 400px;
+  background: #25262b;
+  color: #fff;
+  border-radius: 14px;
+  box-shadow: 0 6px 24px #0002;
+  padding: 18px 24px 16px 24px;
+  font-size: 1rem;
+  z-index: 2000;
+  opacity: 0.95;
+  transition: opacity 0.2s;
+">
+  <span id="teamsNotificationIcon" style="margin-right:10px;"></span>
+  <span id="teamsNotificationMessage"></span>
+</div>
+
 <script src="script.js"></script>
 </body>
 </html>
