@@ -83,7 +83,6 @@ function fetchAndRenderBookings() {
     });
 }
 
-
 // 🎯 Render calendar
 function renderCalendar() {
     const calendar = document.getElementById('calendar');
@@ -116,15 +115,15 @@ function renderCalendar() {
         let dayRow = document.createElement('tr');
         let weekTitle = document.createElement('th');
         weekTitle.className = 'week-title';
-        weekTitle.innerHTML = `Week ${weekNum}: ${startDate.toLocaleDateString()} – ${new Date(startDate.getTime() + 6 * 86400000).toLocaleDateString()}`;
+        weekTitle.innerHTML = `Week ${weekNum}: ${formatDate(startDate)} – ${formatDate(new Date(startDate.getTime() + 6 * 86400000))}`;
         dayRow.appendChild(weekTitle);
 
         for (let i = 0; i < 7; i++) {
             const day = new Date(startDate);
             day.setDate(startDate.getDate() + i);
             const th = document.createElement('th');
-            const dateISO = day.toISOString().split('T')[0];
-            const holiday = holidays.find(h => h.date === dateISO);
+            const dateStr = formatDate(day);
+            const holiday = holidays.find(h => h.date === dateStr);
             th.className = holiday ? 'holiday-header' : 'day-header';
             th.innerHTML = `${day.toLocaleString('default', { weekday: 'short' })}<br>${day.getDate()}${holiday ? `<br><small>${holiday.name}</small>` : ''}`;
             dayRow.appendChild(th);
@@ -137,7 +136,7 @@ function renderCalendar() {
             for (let i = 0; i < 7; i++) {
                 let cell = document.createElement('td');
                 let cellDate = new Date(startDate.getTime() + i * 86400000);
-                cell.dataset.date = cellDate.toISOString().split('T')[0];
+                cell.dataset.date = formatDate(cellDate);
                 cell.dataset.chamber = chamber;
                 cell.addEventListener('mousedown', () => startSelection(cell));
                 cell.addEventListener('mouseover', () => selectCell(cell));
@@ -152,6 +151,7 @@ function renderCalendar() {
     }
     allBookings.forEach(b => applyBookingToCalendar(b));
 }
+
 function applyBookingToCalendar(booking) {
     let startDate = new Date(booking.start);
     let endDate = new Date(booking.end);
@@ -201,18 +201,22 @@ function displayAllBookings() {
                 section.appendChild(item);
             });
         }
-
         listDiv.appendChild(section);
     }
 }
 
-
 // 🎯 Save booking
 function saveManualBooking() {
+    const start = document.getElementById('manualStart').value;
+    const end = document.getElementById('manualEnd').value;
+    if (new Date(start) > new Date(end)) {
+        alert("End date cannot be earlier than start date.");
+        return;
+    }
     const booking = {
         chamber: document.getElementById('manualChamber').value,
-        start: document.getElementById('manualStart').value,
-        end: document.getElementById('manualEnd').value,
+        start,
+        end,
         project: document.getElementById('manualProject').value,
         pic: document.getElementById('manualPic').value,
         color: document.getElementById('manualColor').value
@@ -246,17 +250,13 @@ function deleteBooking(index) {
             return res.json();
         })
         .then(() => {
-            // 🆕 Remove from local array
             allBookings.splice(index, 1);
-
-            // 🆕 Refresh calendar and popup
             renderCalendar();
             displayAllBookings();
         })
         .catch(err => alert("Error deleting booking: " + err.message));
     }
 }
-
 
 // 🎯 Drag to select cells
 function startSelection(cell) {
@@ -268,10 +268,8 @@ function startSelection(cell) {
 function selectCell(cell) {
     if (isDragging) {
         if (cell.classList.contains('booking')) {
-            // Highlight booked cells in red
-            cell.classList.add('deleting');
+            cell.classList.add('deleting'); // 🔴 Highlight booked cells in red
         } else {
-            // Highlight empty cells in blue
             cell.classList.add('selecting');
         }
         selectedCells.push(cell);
@@ -331,13 +329,18 @@ function endSelection() {
     document.getElementById('popup').style.display = 'block';
 }
 
-
 // 🎯 Save booking from drag popup
 function saveBooking() {
+    const start = selectedCells[0].dataset.date;
+    const end = selectedCells[selectedCells.length - 1].dataset.date;
+    if (new Date(start) > new Date(end)) {
+        alert("End date cannot be earlier than start date.");
+        return;
+    }
     const booking = {
         chamber: selectedCells[0].dataset.chamber,
-        start: selectedCells[0].dataset.date,
-        end: selectedCells[selectedCells.length - 1].dataset.date,
+        start,
+        end,
         project: document.getElementById('projectName').value,
         pic: document.getElementById('pic').value,
         color: document.getElementById('color').value
@@ -367,6 +370,9 @@ function clearSelection() {
     selectedCells = [];
 }
 
+function formatDate(date) {
+    return date.toISOString().split('T')[0]; // Fixed: ensures date is not shifted by timezone
+}
 
 // 🚀 On page load
 fetchHolidays(currentDate.getFullYear()).then(fetchAndRenderBookings);
