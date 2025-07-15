@@ -5,7 +5,7 @@ let selectedCells = [];
 let allBookings = [];
 
 // ✅ API base URL
-const apiBaseUrl = "/api/BookingApi"
+const apiBaseUrl = "/api/BookingApi";
 
 // 🎯 Open "Add Booking" popup
 document.getElementById('addBookingBtn').addEventListener('click', () => {
@@ -75,23 +75,21 @@ function fetchHolidays(year) {
 
 // 🎯 Fetch and render bookings
 function fetchAndRenderBookings() {
-    fetch(apiBaseUrl, {
-        method: "GET"
-    })
-    .then(res => {
-        if (!res.ok) throw new Error(`API GET failed: ${res.status}`);
-        return res.json();
-    })
-    .then(data => {
-        allBookings = data || [];
-        renderCalendar();
-    })
-    .catch(err => {
-        console.error("Failed to fetch bookings:", err);
-        alert("Error loading bookings. See console for details.");
-        allBookings = [];
-        renderCalendar();
-    });
+    fetch(apiBaseUrl, { method: "GET" })
+        .then(res => {
+            if (!res.ok) throw new Error(`API GET failed: ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
+            allBookings = data || [];
+            renderCalendar();
+        })
+        .catch(err => {
+            console.error("Failed to fetch bookings:", err);
+            alert("Error loading bookings. See console for details.");
+            allBookings = [];
+            renderCalendar();
+        });
 }
 
 // 🎯 Render calendar
@@ -140,7 +138,7 @@ function renderCalendar() {
             if (holiday) {
                 th.className = 'holiday-header';
             } else if (day.getDay() === 0 || day.getDay() === 6) {
-                th.className = 'weekend-header'; // 🆕 grey out Sat/Sun headers
+                th.className = 'weekend-header'; // 🆕 grey Sat/Sun headers
             } else {
                 th.className = 'day-header';
             }
@@ -212,10 +210,15 @@ function displayAllBookings() {
                     <div class="bottom-row">
                         <span class="date">${b.start} to ${b.end}</span>
                         <div class="booking-actions">
-                            <button onclick="editBooking(allBookings[${idx}])">Edit</button>
-                            <button onclick="deleteBooking(${idx})">Delete</button>
+                            <button class="edit-btn">Edit</button>
+                            <button class="delete-btn">Delete</button>
                         </div>
                     </div>`;
+
+                // 🆕 Attach event listeners for Teams
+                item.querySelector('.edit-btn').addEventListener('click', () => editBooking(b));
+                item.querySelector('.delete-btn').addEventListener('click', () => deleteBooking(idx));
+
                 section.appendChild(item);
             });
         }
@@ -250,25 +253,39 @@ function saveManualBooking() {
 }
 
 function deleteBooking(index) {
-    showConfirm("Are you sure you want to delete this booking?", () => {
-        const booking = allBookings[index];
-        fetch(`${apiBaseUrl}?rowKey=${booking.rowKey}`, {
-            method: "DELETE"
-        })
-        .then(res => {
-            if (!res.ok) throw new Error("Failed to delete booking.");
-            return res.json();
-        })
-        .then(() => {
-            allBookings.splice(index, 1);
-            renderCalendar();
-            displayAllBookings();
-        })
-        .catch(err => alert("Error deleting booking: " + err.message));
+    const booking = allBookings[index];
+
+    document.getElementById('confirmMessage').textContent =
+        `Delete booking for "${booking.project}" from ${booking.start} to ${booking.end}?`;
+    document.getElementById('confirmBox').style.display = 'block';
+
+    const yesBtn = document.getElementById('confirmYes');
+    const noBtn = document.getElementById('confirmNo');
+
+    yesBtn.replaceWith(yesBtn.cloneNode(true));
+    noBtn.replaceWith(noBtn.cloneNode(true));
+
+    document.getElementById('confirmYes').addEventListener('click', () => {
+        document.getElementById('confirmBox').style.display = 'none';
+        fetch(`${apiBaseUrl}?rowKey=${booking.rowKey}`, { method: "DELETE" })
+            .then(res => {
+                if (!res.ok) throw new Error("Failed to delete booking.");
+                return res.json();
+            })
+            .then(() => {
+                allBookings.splice(index, 1);
+                renderCalendar();
+                displayAllBookings();
+            })
+            .catch(err => alert("Error deleting booking: " + err.message));
+    });
+
+    document.getElementById('confirmNo').addEventListener('click', () => {
+        document.getElementById('confirmBox').style.display = 'none';
     });
 }
 
-// 🎯 Drag to select cells
+// 🎯 Drag-to-select logic
 function startSelection(cell) {
     isDragging = true;
     clearSelection();
@@ -278,14 +295,13 @@ function startSelection(cell) {
 function selectCell(cell) {
     if (isDragging) {
         if (cell.classList.contains('booking')) {
-            cell.classList.add('deleting'); // 🔴 Highlight booked cells in red
+            cell.classList.add('deleting');
         } else {
             cell.classList.add('selecting');
         }
         selectedCells.push(cell);
     }
 }
-
 function endSelection() {
     isDragging = false;
     document.removeEventListener('mouseup', endSelection);
@@ -295,9 +311,20 @@ function endSelection() {
     const hasBookings = selectedCells.some(cell => cell.classList.contains('booking'));
 
     if (hasBookings) {
-        showConfirm("Do you want to delete all selected bookings?", () => {
-            const bookingsToDelete = [];
+        document.getElementById('confirmMessage').textContent =
+            "Do you want to delete all selected bookings?";
+        document.getElementById('confirmBox').style.display = 'block';
 
+        const yesBtn = document.getElementById('confirmYes');
+        const noBtn = document.getElementById('confirmNo');
+
+        yesBtn.replaceWith(yesBtn.cloneNode(true));
+        noBtn.replaceWith(noBtn.cloneNode(true));
+
+        document.getElementById('confirmYes').addEventListener('click', () => {
+            document.getElementById('confirmBox').style.display = 'none';
+
+            const bookingsToDelete = [];
             selectedCells.forEach(cell => {
                 const booking = allBookings.find(
                     b =>
@@ -318,12 +345,16 @@ function endSelection() {
                         })
                 )
             )
-                .then(() => {
-                    fetchAndRenderBookings();
-                })
+                .then(() => fetchAndRenderBookings())
                 .catch(err => alert("Error deleting one or more bookings: " + err.message));
+
+            clearSelection();
         });
-        clearSelection();
+
+        document.getElementById('confirmNo').addEventListener('click', () => {
+            document.getElementById('confirmBox').style.display = 'none';
+            clearSelection();
+        });
         return;
     }
 
@@ -333,7 +364,6 @@ function endSelection() {
         return;
     }
 
-    // No bookings in selected cells, open normal booking popup
     document.getElementById('overlay').style.display = 'block';
     document.getElementById('popup').style.display = 'block';
 }
