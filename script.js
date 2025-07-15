@@ -282,12 +282,19 @@ function saveManualBooking() {
         color: document.getElementById('manualColor').value
     };
 
+    // 🟢 Add this check to prevent invalid booking!
+    if (new Date(booking.start) > new Date(booking.end)) {
+        showTeamsNotification("Start date cannot be after end date.", "error");
+        return;
+    }
+
     if (hasHolidayInRange(booking.start, booking.end)) {
         showConfirm("Your booking includes public holidays. Continue?", () => processSaveBooking(booking));
     } else {
         processSaveBooking(booking);
     }
 }
+
 
 async function processSaveBooking(booking) {
     // If editing and the "key" (start date/chamber) is changed, do DELETE + POST.
