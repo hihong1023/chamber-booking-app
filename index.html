@@ -6,8 +6,9 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>Chamber Booking Calendar</h1>
+<h1>Chamber Booking Calendar<span id="currentMonth"></span></h1>
 <div class="controls">
+    <button id="refreshBtn">🔄 Refresh</button>
     <button id="prevMonth">◀ Prev</button>
     <div class="month-group">
         <select id="monthSelect"></select>
@@ -63,6 +64,12 @@
         <button onclick="confirmYes()">Yes</button>
         <button onclick="confirmNo()">No</button>
     </div>
+</div>
+    
+<div id="confirmBox" class="popup" style="display:none;">
+  <p id="confirmMessage"></p>
+  <button id="confirmYes">Yes</button>
+  <button id="confirmNo">No</button>
 </div>
 
 <script src="script.js"></script>
