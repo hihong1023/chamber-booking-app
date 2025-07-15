@@ -1,3 +1,35 @@
+// ✅ Teams-style Notification Function
+function showTeamsNotification(message, type = "info", duration = 2800) {
+    const n = document.getElementById('teamsNotification');
+    const icon = document.getElementById('teamsNotificationIcon');
+    const msg = document.getElementById('teamsNotificationMessage');
+
+    // Choose color/icon
+    let bg = "#25262b", ic = "";
+    switch (type) {
+        case "success": bg = "#228B22"; ic = "✔️"; break;
+        case "error":   bg = "#bb2c2c"; ic = "❌"; break;
+        case "warning": bg = "#f0ad4e"; ic = "⚠️"; break;
+        default:        bg = "#25262b"; ic = "ℹ️";
+    }
+    n.style.background = bg;
+    icon.textContent = ic;
+    msg.textContent = message;
+    n.style.display = 'block';
+    n.style.opacity = 0.98;
+
+    clearTimeout(n._timeout);
+    n._timeout = setTimeout(() => {
+        n.style.opacity = 0;
+        setTimeout(() => { n.style.display = 'none'; }, 400);
+    }, duration);
+
+    n.onclick = () => {
+        n.style.opacity = 0;
+        setTimeout(() => { n.style.display = 'none'; }, 400);
+    };
+}
+
 let currentDate = new Date();
 let holidays = [];
 let isDragging = false;
@@ -70,6 +102,7 @@ function fetchHolidays(year) {
         }).catch(err => {
             console.error("Failed to fetch holidays:", err);
             holidays = [];
+            showTeamsNotification("Could not load public holidays.", "warning");
         });
 }
 
@@ -87,7 +120,7 @@ function fetchAndRenderBookings() {
         })
         .catch(err => {
             console.error("Failed to fetch bookings:", err);
-            alert("Error loading bookings. See console for details.");
+            showTeamsNotification("Error loading bookings. See console for details.", "error");
             allBookings = [];
             renderCalendar();
             displayAllBookings();
@@ -140,7 +173,7 @@ function renderCalendar() {
             if (holiday) {
                 th.className = 'holiday-header';
             } else if (day.getDay() === 0 || day.getDay() === 6) {
-                th.className = 'weekend-header'; // Grey out Sat/Sun
+                th.className = 'weekend-header';
             } else {
                 th.className = 'day-header';
             }
@@ -157,7 +190,7 @@ function renderCalendar() {
                 let cellDate = new Date(startDate.getTime() + i * 86400000);
                 cell.dataset.date = formatDate(cellDate);
                 cell.dataset.chamber = chamber;
-                cell.className = ''; // Reset classes
+                cell.className = '';
 
                 cell.addEventListener('mousedown', () => startSelection(cell));
                 cell.addEventListener('mouseover', () => selectCell(cell));
@@ -250,7 +283,7 @@ function saveManualBooking() {
 
 async function processSaveBooking(booking) {
     if (!isBookingValid(booking, editingBooking ? editingBooking.rowKey : null)) {
-        alert("Booking overlaps with another booking.");
+        showTeamsNotification("Booking overlaps with another booking.", "error");
         return;
     }
 
@@ -273,8 +306,9 @@ async function processSaveBooking(booking) {
         }
         closeManualPopup();
         fetchAndRenderBookings();
+        showTeamsNotification("Booking saved!", "success");
     } catch (err) {
-        alert("Error saving/updating booking: " + err.message);
+        showTeamsNotification("Error saving/updating booking: " + err.message, "error");
     }
 }
 
@@ -298,7 +332,7 @@ function isBookingValid(newBooking, ignoreRowKey = null) {
 if (document.querySelector('#popup button:first-of-type')) {
     document.querySelector('#popup button:first-of-type').addEventListener('click', () => {
         if (selectedCells.length === 0) {
-            alert("No dates selected for booking.");
+            showTeamsNotification("No dates selected for booking.", "warning");
             return;
         }
         const booking = {
@@ -341,7 +375,6 @@ async function endSelection() {
     if (bookingsToUpdate.length > 0) {
         // 🟥 Drag-to-delete: split or trim
         showConfirm("Delete selected dates?", async () => {
-            // Wait for all booking updates
             await Promise.all(bookingsToUpdate.map(async (b) => {
                 const selectedDates = selectedCells
                     .filter(c => c.dataset.chamber == b.chamber)
@@ -393,6 +426,7 @@ async function endSelection() {
                 }
             }));
             fetchAndRenderBookings();
+            showTeamsNotification("Booking(s) deleted.", "success");
         });
     } else {
         // No existing booking, open create popup
@@ -442,7 +476,7 @@ function formatDate(date) {
         String(date.getDate()).padStart(2, '0');
 }
 
-// ✅ Custom confirm box (Teams friendly)
+// ✅ Custom confirm box
 function showConfirm(message, onConfirm) {
     const confirmBox = document.getElementById('confirmBox');
     document.getElementById('confirmMessage').textContent = message;
@@ -513,6 +547,7 @@ function displayAllBookings() {
                         await fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, { method: "DELETE" });
                         closeViewBookings();
                         fetchAndRenderBookings();
+                        showTeamsNotification("Booking deleted.", "success");
                     });
                 });
 
