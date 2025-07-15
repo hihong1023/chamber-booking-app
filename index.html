@@ -55,6 +55,15 @@
     <div id="bookingsList"></div>
     <button onclick="closeViewBookings()" style="width:100%;margin-top:10px;">Close</button>
 </div>
+    
+<!-- Custom Confirm Modal -->
+<div id="confirmOverlay" class="overlay" style="display:none;">
+    <div class="confirm-box">
+        <p id="confirmText"></p>
+        <button onclick="confirmYes()">Yes</button>
+        <button onclick="confirmNo()">No</button>
+    </div>
+</div>
 
 <script src="script.js"></script>
 </body>
