@@ -63,7 +63,7 @@ document.getElementById('monthSelect').addEventListener('change', (e) => {
 
 // ✅ Fetch public holidays
 function fetchHolidays(year) {
-    return fetch(https://date.nager.at/api/v3/PublicHolidays/${year}/SG)
+    return fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/SG`)
         .then(res => res.json())
         .then(data => {
             holidays = data.map(h => ({ date: h.date, name: h.localName }));
@@ -75,9 +75,9 @@ function fetchHolidays(year) {
 
 // ✅ Fetch and render bookings
 function fetchAndRenderBookings() {
-    fetch(apiBaseUrl, { method: "GET" })
+    return fetch(apiBaseUrl, { method: "GET" })
         .then(res => {
-            if (!res.ok) throw new Error(API GET failed: ${res.status});
+            if (!res.ok) throw new Error(`API GET failed: ${res.status}`);
             return res.json();
         })
         .then(data => {
@@ -108,8 +108,8 @@ function renderCalendar() {
     for (let y = year - 1; y <= year + 1; y++) {
         for (let m = 0; m < 12; m++) {
             const option = document.createElement('option');
-            option.value = ${y}-${m + 1};
-            option.text = ${new Date(y, m).toLocaleString('default', { month: 'long' })} ${y};
+            option.value = `${y}-${m + 1}`;
+            option.text = `${new Date(y, m).toLocaleString('default', { month: 'long' })} ${y}`;
             if (y === year && m === month) option.selected = true;
             monthSelect.appendChild(option);
         }
@@ -128,7 +128,7 @@ function renderCalendar() {
         let dayRow = document.createElement('tr');
         let weekTitle = document.createElement('th');
         weekTitle.className = 'week-title';
-        weekTitle.innerHTML = Week ${weekNum}: ${formatDate(startDate)} – ${formatDate(new Date(startDate.getTime() + 6 * 86400000))};
+        weekTitle.innerHTML = `Week ${weekNum}: ${formatDate(startDate)} – ${formatDate(new Date(startDate.getTime() + 6 * 86400000))}`;
         dayRow.appendChild(weekTitle);
 
         for (let i = 0; i < 7; i++) {
@@ -144,19 +144,21 @@ function renderCalendar() {
             } else {
                 th.className = 'day-header';
             }
-            th.innerHTML = ${day.toLocaleString('default', { weekday: 'short' })}<br>${day.getDate()}${holiday ? <br><small>${holiday.name}</small> : ''};
+            th.innerHTML = `${day.toLocaleString('default', { weekday: 'short' })}<br>${day.getDate()}${holiday ? `<br><small>${holiday.name}</small>` : ''}`;
             dayRow.appendChild(th);
         }
         table.appendChild(dayRow);
 
         for (let chamber = 1; chamber <= 3; chamber++) {
             let row = document.createElement('tr');
-            row.innerHTML = <td class="chamber-name">Chamber ${chamber}</td>;
+            row.innerHTML = `<td class="chamber-name">Chamber ${chamber}</td>`;
             for (let i = 0; i < 7; i++) {
                 let cell = document.createElement('td');
                 let cellDate = new Date(startDate.getTime() + i * 86400000);
                 cell.dataset.date = formatDate(cellDate);
                 cell.dataset.chamber = chamber;
+                cell.className = ''; // Reset classes
+
                 cell.addEventListener('mousedown', () => startSelection(cell));
                 cell.addEventListener('mouseover', () => selectCell(cell));
                 cell.addEventListener('mouseup', endSelection);
@@ -174,12 +176,24 @@ function renderCalendar() {
 function applyBookingToCalendar(booking) {
     let startDate = new Date(booking.start);
     let endDate = new Date(booking.end);
-    document.querySelectorAll(td[data-chamber='${booking.chamber}']).forEach(cell => {
+    document.querySelectorAll(`td[data-chamber='${booking.chamber}']`).forEach(cell => {
         const cellDate = new Date(cell.dataset.date);
         if (cellDate >= startDate && cellDate <= endDate) {
             cell.classList.add('booking');
             cell.style.backgroundColor = booking.color || '#4caf50';
-            cell.innerHTML = ${booking.project}<br><small>${booking.pic}</small>;
+            cell.innerHTML = '';
+            let projectSpan = document.createElement('span');
+            projectSpan.textContent = booking.project;
+            let br = document.createElement('br');
+            let picSmall = document.createElement('small');
+            picSmall.textContent = booking.pic;
+            cell.appendChild(projectSpan);
+            cell.appendChild(br);
+            cell.appendChild(picSmall);
+        } else {
+            cell.classList.remove('booking');
+            cell.style.backgroundColor = '';
+            cell.innerHTML = '';
         }
     });
 }
@@ -234,43 +248,33 @@ function saveManualBooking() {
     }
 }
 
-function processSaveBooking(booking) {
+async function processSaveBooking(booking) {
     if (!isBookingValid(booking, editingBooking ? editingBooking.rowKey : null)) {
         alert("Booking overlaps with another booking.");
         return;
     }
 
-    if (editingBooking) {
-        booking.rowKey = editingBooking.rowKey;
-        fetch(${apiBaseUrl}?rowKey=${booking.rowKey}, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(booking)
-        })
-        .then(res => {
+    try {
+        if (editingBooking) {
+            booking.rowKey = editingBooking.rowKey;
+            let res = await fetch(`${apiBaseUrl}?rowKey=${booking.rowKey}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(booking)
+            });
             if (!res.ok) throw new Error("Failed to update booking.");
-            return res.json();
-        })
-        .then(() => {
-            closeManualPopup();
-            fetchAndRenderBookings();
-        })
-        .catch(err => alert("Error updating booking: " + err.message));
-    } else {
-        fetch(apiBaseUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(booking)
-        })
-        .then(res => {
+        } else {
+            let res = await fetch(apiBaseUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(booking)
+            });
             if (!res.ok) throw new Error("Failed to save booking.");
-            return res.json();
-        })
-        .then(() => {
-            closeManualPopup();
-            fetchAndRenderBookings();
-        })
-        .catch(err => alert("Error saving booking: " + err.message));
+        }
+        closeManualPopup();
+        fetchAndRenderBookings();
+    } catch (err) {
+        alert("Error saving/updating booking: " + err.message);
     }
 }
 
@@ -291,28 +295,30 @@ function isBookingValid(newBooking, ignoreRowKey = null) {
 }
 
 // ✅ Drag booking save
-document.querySelector('#popup button:first-of-type').addEventListener('click', () => {
-    if (selectedCells.length === 0) {
-        alert("No dates selected for booking.");
-        return;
-    }
+if (document.querySelector('#popup button:first-of-type')) {
+    document.querySelector('#popup button:first-of-type').addEventListener('click', () => {
+        if (selectedCells.length === 0) {
+            alert("No dates selected for booking.");
+            return;
+        }
+        const booking = {
+            chamber: selectedCells[0].dataset.chamber,
+            start: selectedCells[0].dataset.date,
+            end: selectedCells[selectedCells.length - 1].dataset.date,
+            project: document.getElementById('projectName').value,
+            pic: document.getElementById('pic').value,
+            color: document.getElementById('color').value
+        };
 
-    const booking = {
-        chamber: selectedCells[0].dataset.chamber,
-        start: selectedCells[0].dataset.date,
-        end: selectedCells[selectedCells.length - 1].dataset.date,
-        project: document.getElementById('projectName').value,
-        pic: document.getElementById('pic').value,
-        color: document.getElementById('color').value
-    };
+        if (hasHolidayInRange(booking.start, booking.end)) {
+            showConfirm("Your booking includes public holidays. Continue?", () => processSaveBooking(booking));
+        } else {
+            processSaveBooking(booking);
+        }
+    });
+}
 
-    if (hasHolidayInRange(booking.start, booking.end)) {
-        showConfirm("Your booking includes public holidays. Continue?", () => processSaveBooking(booking));
-    } else {
-        processSaveBooking(booking);
-    }
-});
-function endSelection() {
+async function endSelection() {
     isDragging = false;
     document.removeEventListener('mouseup', endSelection);
 
@@ -334,12 +340,12 @@ function endSelection() {
 
     if (bookingsToUpdate.length > 0) {
         // 🟥 Drag-to-delete: split or trim
-        showConfirm("Delete selected dates?", () => {
-            bookingsToUpdate.forEach(b => {
+        showConfirm("Delete selected dates?", async () => {
+            // Wait for all booking updates
+            await Promise.all(bookingsToUpdate.map(async (b) => {
                 const selectedDates = selectedCells
                     .filter(c => c.dataset.chamber == b.chamber)
                     .map(c => new Date(c.dataset.date));
-
                 const minDate = new Date(Math.min(...selectedDates));
                 const maxDate = new Date(Math.max(...selectedDates));
 
@@ -348,22 +354,22 @@ function endSelection() {
                     const part1 = { ...b, end: formatDate(new Date(minDate.getTime() - 86400000)) };
                     const part2 = { ...b, start: formatDate(new Date(maxDate.getTime() + 86400000)) };
 
-                    fetch(${apiBaseUrl}?rowKey=${b.rowKey}, { method: "DELETE" })
-                        .then(() => Promise.all([
-                            fetch(apiBaseUrl, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify(part1)
-                            }),
-                            fetch(apiBaseUrl, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify(part2)
-                            })
-                        ]));
+                    await fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, { method: "DELETE" });
+                    await Promise.all([
+                        fetch(apiBaseUrl, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(part1)
+                        }),
+                        fetch(apiBaseUrl, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(part2)
+                        })
+                    ]);
                 } else if (minDate > new Date(b.start)) {
                     // Trim end
-                    fetch(${apiBaseUrl}?rowKey=${b.rowKey}, {
+                    await fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
@@ -373,7 +379,7 @@ function endSelection() {
                     });
                 } else if (maxDate < new Date(b.end)) {
                     // Trim start
-                    fetch(${apiBaseUrl}?rowKey=${b.rowKey}, {
+                    await fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
@@ -383,9 +389,9 @@ function endSelection() {
                     });
                 } else {
                     // Delete entire booking
-                    fetch(${apiBaseUrl}?rowKey=${b.rowKey}, { method: "DELETE" });
+                    await fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, { method: "DELETE" });
                 }
-            });
+            }));
             fetchAndRenderBookings();
         });
     } else {
@@ -406,12 +412,14 @@ function startSelection(cell) {
 
 function selectCell(cell) {
     if (isDragging) {
-        if (cell.classList.contains('booking')) {
-            cell.classList.add('deleting'); // Highlight red
-        } else {
-            cell.classList.add('selecting'); // Highlight blue
+        if (!selectedCells.includes(cell)) {
+            if (cell.classList.contains('booking')) {
+                cell.classList.add('deleting'); // Highlight red
+            } else {
+                cell.classList.add('selecting'); // Highlight blue
+            }
+            selectedCells.push(cell);
         }
-        selectedCells.push(cell);
     }
 }
 
@@ -425,7 +433,7 @@ function clearSelection() {
 
 function updateMonthHeader() {
     document.getElementById('currentMonth').textContent =
-        ${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()};
+        `${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()}`;
 }
 
 function formatDate(date) {
@@ -464,7 +472,7 @@ function displayAllBookings() {
     for (let chamber = 1; chamber <= 3; chamber++) {
         const section = document.createElement('div');
         section.className = 'chamber-section';
-        section.innerHTML = <h4>Chamber ${chamber}</h4>;
+        section.innerHTML = `<h4>Chamber ${chamber}</h4>`;
 
         const chamberBookings = allBookings.filter(b => b.chamber == chamber);
 
@@ -477,18 +485,22 @@ function displayAllBookings() {
             chamberBookings.forEach((b, idx) => {
                 const item = document.createElement('div');
                 item.className = 'booking-item';
-                item.innerHTML = 
-                    <div class="top-row">
-                        <span class="name">${b.project}</span>
-                        <span class="pic">${b.pic}</span>
+                item.innerHTML =
+                    `<div class="top-row">
+                        <span class="name"></span>
+                        <span class="pic"></span>
                     </div>
                     <div class="bottom-row">
-                        <span class="date">${b.start} to ${b.end}</span>
+                        <span class="date"></span>
                         <div class="booking-actions">
                             <button class="edit-btn">Edit</button>
                             <button class="delete-btn">Delete</button>
                         </div>
-                    </div>;
+                    </div>`;
+
+                item.querySelector('.name').textContent = b.project;
+                item.querySelector('.pic').textContent = b.pic;
+                item.querySelector('.date').textContent = `${b.start} to ${b.end}`;
 
                 // 📝 Edit button
                 item.querySelector('.edit-btn').addEventListener('click', () => {
@@ -497,11 +509,10 @@ function displayAllBookings() {
 
                 // 🗑️ Delete button
                 item.querySelector('.delete-btn').addEventListener('click', () => {
-                    showConfirm(Delete booking for "${b.project}"?, () => {
-                        fetch(${apiBaseUrl}?rowKey=${b.rowKey}, { method: "DELETE" })
-                            .then(() => fetchAndRenderBookings())
-                            .catch(err => alert("Error deleting booking: " + err.message));
+                    showConfirm(`Delete booking for "${b.project}"?`, async () => {
+                        await fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, { method: "DELETE" });
                         closeViewBookings();
+                        fetchAndRenderBookings();
                     });
                 });
 
