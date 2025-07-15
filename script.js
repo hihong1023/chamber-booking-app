@@ -7,6 +7,27 @@ let allBookings = [];
 // ✅ API base URL (use proxy path in Static Web App)
 const apiBaseUrl = "/api/BookingApi";
 
+document.getElementById('addBookingBtn').addEventListener('click', () => {
+    document.getElementById('overlay').style.display = 'block';
+    document.getElementById('manualPopup').style.display = 'block';
+});
+
+document.getElementById('viewBookingsBtn').addEventListener('click', () => {
+    document.getElementById('overlay').style.display = 'block';
+    document.getElementById('viewBookings').style.display = 'block';
+    displayAllBookings();
+});
+
+function closeManualPopup() {
+    document.getElementById('overlay').style.display = 'none';
+    document.getElementById('manualPopup').style.display = 'none';
+}
+
+function closeViewBookings() {
+    document.getElementById('overlay').style.display = 'none';
+    document.getElementById('viewBookings').style.display = 'none';
+}
+
 document.getElementById('prevMonth').addEventListener('click', () => {
     currentDate.setMonth(currentDate.getMonth() - 1);
     fetchHolidays(currentDate.getFullYear()).then(fetchAndRenderBookings);
