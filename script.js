@@ -290,35 +290,64 @@ function saveManualBooking() {
 }
 
 async function processSaveBooking(booking) {
-    if (!isBookingValid(booking, editingBooking ? editingBooking.rowKey : null)) {
-        showTeamsNotification("Booking overlaps with another booking.", "error");
+    // If editing and the "key" (start date/chamber) is changed, do DELETE + POST.
+    if (editingBooking &&
+        (booking.start !== editingBooking.start || booking.chamber !== editingBooking.chamber)) {
+        try {
+            // 1. Delete old booking by rowKey
+            await fetch(`${apiBaseUrl}?rowKey=${editingBooking.rowKey}`, { method: "DELETE" });
+
+            // 2. Create new booking
+            let res = await fetch(apiBaseUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(booking)
+            });
+            if (!res.ok) throw new Error("Failed to save booking after key change.");
+            
+            closeManualPopup();
+            fetchAndRenderBookings();
+            showTeamsNotification("Booking updated!", "success");
+        } catch (err) {
+            showTeamsNotification("Error updating booking: " + err.message, "error");
+        }
         return;
     }
 
-    try {
-        if (editingBooking) {
-            booking.rowKey = editingBooking.rowKey;
+    // Normal update
+    if (editingBooking) {
+        booking.rowKey = editingBooking.rowKey;
+        try {
             let res = await fetch(`${apiBaseUrl}?rowKey=${booking.rowKey}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(booking)
             });
             if (!res.ok) throw new Error("Failed to update booking.");
-        } else {
+            closeManualPopup();
+            fetchAndRenderBookings();
+            showTeamsNotification("Booking updated!", "success");
+        } catch (err) {
+            showTeamsNotification("Error saving/updating booking: " + err.message, "error");
+        }
+    } else {
+        // New booking
+        try {
             let res = await fetch(apiBaseUrl, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(booking)
             });
             if (!res.ok) throw new Error("Failed to save booking.");
+            closeManualPopup();
+            fetchAndRenderBookings();
+            showTeamsNotification("Booking saved!", "success");
+        } catch (err) {
+            showTeamsNotification("Error saving/updating booking: " + err.message, "error");
         }
-        closeManualPopup();
-        fetchAndRenderBookings();
-        showTeamsNotification("Booking saved!", "success");
-    } catch (err) {
-        showTeamsNotification("Error saving/updating booking: " + err.message, "error");
     }
 }
+
 
 // ✅ Validate booking (prevent clashes)
 function isBookingValid(newBooking, ignoreRowKey = null) {
