@@ -152,6 +152,18 @@ function renderCalendar() {
     }
     allBookings.forEach(b => applyBookingToCalendar(b));
 }
+function applyBookingToCalendar(booking) {
+    let startDate = new Date(booking.start);
+    let endDate = new Date(booking.end);
+    document.querySelectorAll(`td[data-chamber='${booking.chamber}']`).forEach(cell => {
+        const cellDate = new Date(cell.dataset.date);
+        if (cellDate >= startDate && cellDate <= endDate) {
+            cell.classList.add('booking');
+            cell.style.backgroundColor = booking.color || '#4caf50';
+            cell.innerHTML = `${booking.project}<br><small>${booking.pic}</small>`;
+        }
+    });
+}
 
 // 🎯 Display all bookings in popup
 function displayAllBookings() {
