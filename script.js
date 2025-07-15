@@ -133,7 +133,7 @@ function renderCalendar() {
             if (holiday) {
                 th.className = 'holiday-header';
             } else if (day.getDay() === 0 || day.getDay() === 6) {
-                th.className = 'weekend-header'; // Grey out Sat/Sun
+                th.className = 'weekend-header';
             } else {
                 th.className = 'day-header';
             }
@@ -357,42 +357,5 @@ function displayAllBookings() {
     }
 }
 
-// ✅ Update month header text
-function updateMonthHeader() {
-    document.getElementById('currentMonth').textContent =
-        `${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()}`;
-}
-
-// ✅ Format date as YYYY-MM-DD
-function formatDate(date) {
-    return date.getFullYear() + '-' +
-        String(date.getMonth() + 1).padStart(2, '0') + '-' +
-        String(date.getDate()).padStart(2, '0');
-}
-
-// ✅ Teams-friendly popup (confirm modal)
-function showPopup(message, onConfirm = null) {
-    const confirmBox = document.getElementById('confirmBox');
-    document.getElementById('confirmMessage').textContent = message;
-    confirmBox.style.display = 'block';
-
-    const yesBtn = document.getElementById('confirmYes');
-    const noBtn = document.getElementById('confirmNo');
-
-    // Clean old listeners
-    yesBtn.replaceWith(yesBtn.cloneNode(true));
-    noBtn.replaceWith(noBtn.cloneNode(true));
-
-    // Attach new listeners
-    document.getElementById('confirmYes').addEventListener('click', () => {
-        confirmBox.style.display = 'none';
-        if (onConfirm) onConfirm();
-    });
-    document.getElementById('confirmNo').addEventListener('click', () => {
-        confirmBox.style.display = 'none';
-    });
-}
-
-// ✅ Initial page load
+// 🚀 On page load
 fetchHolidays(currentDate.getFullYear()).then(fetchAndRenderBookings);
-
