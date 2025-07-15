@@ -5,7 +5,7 @@ let selectedCells = [];
 let allBookings = [];
 
 // ✅ API base URL
-const apiBaseUrl = "https://chamber-booking-api-acckatb7dmbwc2gu.eastasia-01.azurewebsites.net/api/BookingApi";
+const apiBaseUrl = "/api/BookingApi"
 
 // 🎯 Open "Add Booking" popup
 document.getElementById('addBookingBtn').addEventListener('click', () => {
