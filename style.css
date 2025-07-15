@@ -64,6 +64,11 @@ th.holiday-header {
     background-color: #f8d7da;
     color: #842029;
 }
+th.weekend-header {
+    background-color: #e9ecef; /* light grey */
+    color: #495057;           /* slightly muted text */
+}
+
 .chamber-name {
     background-color: #f1f3f5;
     font-weight: 600;
