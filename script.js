@@ -4,8 +4,8 @@ let isDragging = false;
 let selectedCells = [];
 let allBookings = [];
 
-// ✅ Your Azure Function API URL
-const apiBaseUrl = "https://chamber-booking-api-acckatb7dmbwc2gu.eastasia-01.azurewebsites.net/api/BookingApi?"; // replace with your real function URL
+// ✅ API base URL (use proxy path in Static Web App)
+const apiBaseUrl = "/api/BookingApi";
 
 document.getElementById('prevMonth').addEventListener('click', () => {
     currentDate.setMonth(currentDate.getMonth() - 1);
@@ -27,21 +27,25 @@ function fetchHolidays(year) {
         .then(data => {
             holidays = data.map(h => ({ date: h.date, name: h.localName }));
         }).catch(err => {
-            console.error("Failed to fetch holidays", err);
+            console.error("Failed to fetch holidays:", err);
             holidays = [];
         });
 }
 
 function fetchAndRenderBookings() {
-    // 🛠 Fetch all bookings from API
+    // Fetch all bookings from API
     fetch(apiBaseUrl)
-        .then(res => res.json())
+        .then(res => {
+            if (!res.ok) throw new Error(`API GET failed: ${res.status}`);
+            return res.json();
+        })
         .then(data => {
-            allBookings = data || []; // If no bookings, set empty array
+            allBookings = data || []; // Default to empty array
             renderCalendar();
         })
         .catch(err => {
             console.error("Failed to fetch bookings from API:", err);
+            alert("Error loading bookings. See console for details.");
             allBookings = [];
             renderCalendar();
         });
@@ -125,7 +129,6 @@ function saveManualBooking() {
         color: document.getElementById('manualColor').value
     };
 
-    // POST booking to API
     fetch(apiBaseUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -210,7 +213,6 @@ function saveBooking() {
         color: document.getElementById('color').value
     };
 
-    // POST booking to API
     fetch(apiBaseUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -236,5 +238,4 @@ function clearSelection() {
     selectedCells = [];
 }
 
-// 🚀 Fetch bookings and holidays on page load
 fetchHolidays(currentDate.getFullYear()).then(fetchAndRenderBookings);
