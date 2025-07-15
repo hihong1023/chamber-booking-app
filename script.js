@@ -205,7 +205,7 @@ function saveManualBooking() {
 function deleteBooking(index) {
     const booking = allBookings[index];
     if (confirm("Delete this booking?")) {
-        fetch(`${apiBaseUrl}?rowKey=${booking.rowKey}`, {
+        fetch(`${apiBaseUrl}?rowKey=${encodeURIComponent(booking.rowKey)}`, {
             method: "DELETE"
         })
         .then(res => {
