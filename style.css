@@ -1,28 +1,26 @@
 body {
     font-family: "Segoe UI", Tahoma, sans-serif;
-    margin: 10px; /* smaller margin */
+    margin: 20px;
     background-color: #f9f9f9;
 }
 h1 {
     text-align: center;
     color: #2d6a4f;
-    font-size: 20px; /* smaller title */
 }
 .controls {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 }
 .month-group {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 6px; /* tighter spacing */
+    gap: 10px;
 }
 .controls button, .controls select {
-    padding: 6px 10px; /* smaller buttons */
-    font-size: 12px;
+    padding: 8px 12px;
     border: none;
     background-color: #40916c;
     color: white;
@@ -36,8 +34,8 @@ table {
     border-collapse: collapse;
     width: 100%;
     table-layout: fixed;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border-radius: 8px;
     margin-bottom: 0;
     overflow: hidden;
 }
@@ -45,8 +43,7 @@ th, td {
     border: 1px solid #ddd;
     text-align: center;
     vertical-align: middle;
-    height: 35px; /* smaller cells */
-    font-size: 12px; /* smaller text */
+    height: 50px;
     overflow: hidden;
     position: relative;
 }
@@ -55,39 +52,37 @@ th.week-title {
     font-weight: bold;
     text-align: center;
     word-wrap: break-word;
-    padding: 4px;
-    font-size: 12px;
+    padding: 6px;
 }
 th.day-header {
     background-color: #b7e4c7;
     font-weight: bold;
-    font-size: 12px;
 }
 th.holiday-header {
     background-color: #f8d7da;
     color: #842029;
-    font-size: 12px;
 }
 .chamber-name {
     background-color: #f1f3f5;
     font-weight: 600;
-    font-size: 12px;
 }
 td.booking {
     color: white;
     font-weight: bold;
-    border-radius: 3px;
-    padding: 2px;
-    font-size: 11px;
+    border-radius: 4px;
+    padding: 4px;
     cursor: pointer;
 }
+/* For booking selection (blue) */
 td.selecting {
     background-color: #a3d2ca !important;
-    border: 1px solid #007bff;
+    border: 2px solid #007bff; /* Blue border */
 }
+
+/* For deletion selection (red) */
 td.deleting {
     background-color: #f8d7da !important;
-    border: 1px solid #dc3545;
+    border: 2px solid #dc3545; /* Red border */
 }
 
 .popup, .manual-popup, .view-bookings-popup {
@@ -97,49 +92,90 @@ td.deleting {
     transform: translate(-50%, -50%);
     background: white;
     border: 1px solid #ccc;
-    border-radius: 6px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    padding: 10px; /* smaller padding */
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    padding: 20px;
     display: none;
     z-index: 10;
-    max-height: 70vh; /* smaller popup */
+    max-height: 80vh;
     overflow-y: auto;
-    width: 600px; /* narrower popup */
+    width: 900px;
 }
 .popup input, .popup button, .manual-popup input, .manual-popup button, .manual-popup select, .view-bookings-popup button {
-    margin: 4px 0;
+    margin: 5px 0;
     width: 100%;
-    padding: 4px;
-    font-size: 12px;
+    padding: 6px;
 }
 .overlay {
     display: none;
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.5);
     z-index: 5;
+}
+.booking-group {
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px;
+    background-color: #f8f9fa;
+}
+.booking-header {
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #2d6a4f;
+    font-size: 18px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 5px;
 }
 .booking-item {
     background-color: #ffffff;
     border: 1px solid #ccc;
     border-radius: 4px;
-    padding: 6px;
-    margin-bottom: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+.booking-item .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
 }
 .booking-item .top-row .name {
     font-weight: bold;
-    font-size: 13px;
+    font-size: 16px;
 }
 .booking-item .top-row .pic {
     font-style: italic;
     color: #555;
-    font-size: 11px;
+    font-size: 14px;
+    margin-left: 10px;
 }
-.booking-item .bottom-row .date {
-    font-size: 11px;
+.booking-item .bottom-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 6px;
+}
+.booking-item .date {
+    font-size: 14px;
+    flex: 1;
+    text-align: center;
+}
+.booking-item .booking-actions {
+    display: flex;
+    gap: 8px;
 }
 .booking-item .booking-actions button {
-    width: 60px;
-    padding: 3px;
-    font-size: 11px;
+    width: 70px;
+    padding: 4px;
+    font-size: 13px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #40916c;
+    color: white;
+}
+.booking-item .booking-actions button:hover {
+    background-color: #2d6a4f;
 }
