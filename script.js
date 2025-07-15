@@ -7,6 +7,7 @@ let allBookings = [];
 // ✅ API base URL
 const apiBaseUrl = "/api/BookingApi"
 
+
 // 🎯 Open "Add Booking" popup
 document.getElementById('addBookingBtn').addEventListener('click', () => {
     document.getElementById('overlay').style.display = 'block';
