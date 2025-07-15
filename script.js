@@ -32,6 +32,8 @@ function showTeamsNotification(message, type = "info", duration = 2800) {
 
 let currentDate = new Date();
 let holidays = [];
+let isDragging = false;      // Still defined, but not used.
+let selectedCells = [];      // Still defined, but not used.
 let allBookings = [];
 let editingBooking = null; // Track edit mode
 
@@ -184,7 +186,13 @@ function renderCalendar() {
                 cell.dataset.date = formatDate(cellDate);
                 cell.dataset.chamber = chamber;
                 cell.className = '';
-                row.appendChild(cell);
+
+                // Drag-to-booking is disabled. To re-enable, uncomment below:
+                // cell.addEventListener('mousedown', () => startSelection(cell));
+                // cell.addEventListener('mouseover', () => selectCell(cell));
+                // cell.addEventListener('mouseup', endSelection);
+
+                row.appendChild(cell); // <-- THIS IS CRUCIAL!
             }
             table.appendChild(row);
         }
