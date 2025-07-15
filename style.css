@@ -1,23 +1,24 @@
 body {
     font-family: "Segoe UI", Tahoma, sans-serif;
-    margin: 20px;
+    margin: 10px;
     background-color: #f9f9f9;
 }
 h1 {
     text-align: center;
     color: #2d6a4f;
+    font-size: 20px; /* smaller title */
 }
 .controls {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
 }
 .month-group {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 6px;
 }
 .controls button, .controls select {
     padding: 8px 12px;
@@ -43,7 +44,8 @@ th, td {
     border: 1px solid #ddd;
     text-align: center;
     vertical-align: middle;
-    height: 50px;
+    height: 35px;
+    font-size: 12px;
     overflow: hidden;
     position: relative;
 }
