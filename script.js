@@ -64,22 +64,25 @@ function fetchHolidays(year) {
 
 // 🎯 Fetch and render bookings
 function fetchAndRenderBookings() {
-    fetch(apiBaseUrl)
-        .then(res => {
-            if (!res.ok) throw new Error(`API GET failed: ${res.status}`);
-            return res.json();
-        })
-        .then(data => {
-            allBookings = data || [];
-            renderCalendar();
-        })
-        .catch(err => {
-            console.error("Failed to fetch bookings:", err);
-            alert("Error loading bookings. Check console for details.");
-            allBookings = [];
-            renderCalendar();
-        });
+    fetch(apiBaseUrl, {
+        method: "GET"
+    })
+    .then(res => {
+        if (!res.ok) throw new Error(`API GET failed: ${res.status}`);
+        return res.json();
+    })
+    .then(data => {
+        allBookings = data || [];
+        renderCalendar();
+    })
+    .catch(err => {
+        console.error("Failed to fetch bookings:", err);
+        alert("Error loading bookings. See console for details.");
+        allBookings = [];
+        renderCalendar();
+    });
 }
+
 
 // 🎯 Render calendar
 function renderCalendar() {
