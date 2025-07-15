@@ -52,7 +52,7 @@ document.getElementById('monthSelect').addEventListener('change', (e) => {
 
 // 🎯 Fetch public holidays
 function fetchHolidays(year) {
-    return fetch(https://date.nager.at/api/v3/PublicHolidays/${year}/SG)
+    return fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/SG`)
         .then(res => res.json())
         .then(data => {
             holidays = data.map(h => ({ date: h.date, name: h.localName }));
@@ -68,7 +68,7 @@ function fetchAndRenderBookings() {
         method: "GET"
     })
     .then(res => {
-        if (!res.ok) throw new Error(API GET failed: ${res.status});
+        if (!res.ok) throw new Error(`API GET failed: ${res.status}`);
         return res.json();
     })
     .then(data => {
@@ -83,7 +83,6 @@ function fetchAndRenderBookings() {
     });
 }
 
-
 // 🎯 Render calendar
 function renderCalendar() {
     const calendar = document.getElementById('calendar');
@@ -96,8 +95,8 @@ function renderCalendar() {
     for (let y = year - 1; y <= year + 1; y++) {
         for (let m = 0; m < 12; m++) {
             const option = document.createElement('option');
-            option.value = ${y}-${m + 1};
-            option.text = ${new Date(y, m).toLocaleString('default', { month: 'long' })} ${y};
+            option.value = `${y}-${m + 1}`;
+            option.text = `${new Date(y, m).toLocaleString('default', { month: 'long' })} ${y}`;
             if (y === year && m === month) option.selected = true;
             monthSelect.appendChild(option);
         }
@@ -116,28 +115,28 @@ function renderCalendar() {
         let dayRow = document.createElement('tr');
         let weekTitle = document.createElement('th');
         weekTitle.className = 'week-title';
-        weekTitle.innerHTML = Week ${weekNum}: ${startDate.toLocaleDateString()} – ${new Date(startDate.getTime() + 6 * 86400000).toLocaleDateString()};
+        weekTitle.innerHTML = `Week ${weekNum}: ${formatDate(startDate)} – ${formatDate(new Date(startDate.getTime() + 6 * 86400000))}`;
         dayRow.appendChild(weekTitle);
 
         for (let i = 0; i < 7; i++) {
             const day = new Date(startDate);
             day.setDate(startDate.getDate() + i);
             const th = document.createElement('th');
-            const dateISO = day.toISOString().split('T')[0];
+            const dateISO = formatDate(day);
             const holiday = holidays.find(h => h.date === dateISO);
             th.className = holiday ? 'holiday-header' : 'day-header';
-            th.innerHTML = ${day.toLocaleString('default', { weekday: 'short' })}<br>${day.getDate()}${holiday ? <br><small>${holiday.name}</small> : ''};
+            th.innerHTML = `${day.toLocaleString('default', { weekday: 'short' })}<br>${day.getDate()}${holiday ? `<br><small>${holiday.name}</small>` : ''}`;
             dayRow.appendChild(th);
         }
         table.appendChild(dayRow);
 
         for (let chamber = 1; chamber <= 3; chamber++) {
             let row = document.createElement('tr');
-            row.innerHTML = <td class="chamber-name">Chamber ${chamber}</td>;
+            row.innerHTML = `<td class="chamber-name">Chamber ${chamber}</td>`;
             for (let i = 0; i < 7; i++) {
                 let cell = document.createElement('td');
                 let cellDate = new Date(startDate.getTime() + i * 86400000);
-                cell.dataset.date = cellDate.toISOString().split('T')[0];
+                cell.dataset.date = formatDate(cellDate);
                 cell.dataset.chamber = chamber;
                 cell.addEventListener('mousedown', () => startSelection(cell));
                 cell.addEventListener('mouseover', () => selectCell(cell));
@@ -152,15 +151,16 @@ function renderCalendar() {
     }
     allBookings.forEach(b => applyBookingToCalendar(b));
 }
+
 function applyBookingToCalendar(booking) {
     let startDate = new Date(booking.start);
     let endDate = new Date(booking.end);
-    document.querySelectorAll(td[data-chamber='${booking.chamber}']).forEach(cell => {
+    document.querySelectorAll(`td[data-chamber='${booking.chamber}']`).forEach(cell => {
         const cellDate = new Date(cell.dataset.date);
         if (cellDate >= startDate && cellDate <= endDate) {
             cell.classList.add('booking');
             cell.style.backgroundColor = booking.color || '#4caf50';
-            cell.innerHTML = ${booking.project}<br><small>${booking.pic}</small>;
+            cell.innerHTML = `${booking.project}<br><small>${booking.pic}</small>`;
         }
     });
 }
@@ -173,7 +173,7 @@ function displayAllBookings() {
     for (let chamber = 1; chamber <= 3; chamber++) {
         const section = document.createElement('div');
         section.className = 'chamber-section';
-        section.innerHTML = <h4>Chamber ${chamber}</h4>;
+        section.innerHTML = `<h4>Chamber ${chamber}</h4>`;
 
         const chamberBookings = allBookings.filter(b => b.chamber == chamber);
 
@@ -186,7 +186,7 @@ function displayAllBookings() {
             chamberBookings.forEach((b, idx) => {
                 const item = document.createElement('div');
                 item.className = 'booking-item';
-                item.innerHTML = 
+                item.innerHTML = `
                     <div class="top-row">
                         <span class="name">${b.project}</span>
                         <span class="pic">${b.pic}</span>
@@ -197,15 +197,13 @@ function displayAllBookings() {
                             <button onclick="editBooking(allBookings[${idx}])">Edit</button>
                             <button onclick="deleteBooking(${idx})">Delete</button>
                         </div>
-                    </div>;
+                    </div>`;
                 section.appendChild(item);
             });
         }
-
         listDiv.appendChild(section);
     }
 }
-
 
 // 🎯 Save booking
 function saveManualBooking() {
@@ -238,7 +236,7 @@ function saveManualBooking() {
 function deleteBooking(index) {
     const booking = allBookings[index];
     if (confirm("Are you sure you want to delete this booking?")) {
-        fetch(${apiBaseUrl}?rowKey=${booking.rowKey}, {
+        fetch(`${apiBaseUrl}?rowKey=${booking.rowKey}`, {
             method: "DELETE"
         })
         .then(res => {
@@ -246,17 +244,13 @@ function deleteBooking(index) {
             return res.json();
         })
         .then(() => {
-            // 🆕 Remove from local array
             allBookings.splice(index, 1);
-
-            // 🆕 Refresh calendar and popup
             renderCalendar();
             displayAllBookings();
         })
         .catch(err => alert("Error deleting booking: " + err.message));
     }
 }
-
 
 // 🎯 Drag to select cells
 function startSelection(cell) {
@@ -268,10 +262,8 @@ function startSelection(cell) {
 function selectCell(cell) {
     if (isDragging) {
         if (cell.classList.contains('booking')) {
-            // Highlight booked cells in red
-            cell.classList.add('deleting');
+            cell.classList.add('deleting'); // 🔴 Highlight booked cells in red
         } else {
-            // Highlight empty cells in blue
             cell.classList.add('selecting');
         }
         selectedCells.push(cell);
@@ -304,9 +296,9 @@ function endSelection() {
 
             Promise.all(
                 bookingsToDelete.map(b =>
-                    fetch(${apiBaseUrl}?rowKey=${b.rowKey}, { method: "DELETE" })
+                    fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, { method: "DELETE" })
                         .then(res => {
-                            if (!res.ok) throw new Error(Failed to delete booking ${b.project});
+                            if (!res.ok) throw new Error(`Failed to delete booking ${b.project}`);
                         })
                 )
             )
@@ -330,7 +322,6 @@ function endSelection() {
     document.getElementById('overlay').style.display = 'block';
     document.getElementById('popup').style.display = 'block';
 }
-
 
 // 🎯 Save booking from drag popup
 function saveBooking() {
@@ -367,6 +358,12 @@ function clearSelection() {
     selectedCells = [];
 }
 
+// 🎯 Singapore-safe date format (YYYY-MM-DD)
+function formatDate(date) {
+    return date.getFullYear() + '-' +
+           String(date.getMonth() + 1).padStart(2, '0') + '-' +
+           String(date.getDate()).padStart(2, '0');
+}
 
 // 🚀 On page load
 fetchHolidays(currentDate.getFullYear()).then(fetchAndRenderBookings);
