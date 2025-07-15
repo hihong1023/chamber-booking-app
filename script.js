@@ -170,10 +170,8 @@ function saveManualBooking() {
 function deleteBooking(index) {
     const booking = allBookings[index];
     if (confirm("Delete this booking?")) {
-        fetch(`${apiBaseUrl}/delete`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ rowKey: booking.rowKey })
+        fetch(`${apiBaseUrl}?rowKey=${booking.rowKey}`, {
+            method: "DELETE"
         })
         .then(res => {
             if (!res.ok) throw new Error("Failed to delete booking.");
@@ -182,6 +180,7 @@ function deleteBooking(index) {
         .catch(err => alert("Error deleting booking: " + err.message));
     }
 }
+
 
 function applyBookingToCalendar(booking) {
     let startDate = new Date(booking.start);
