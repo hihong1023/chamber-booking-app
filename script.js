@@ -5,7 +5,8 @@ let selectedCells = [];
 let allBookings = [];
 
 // ✅ API base URL (use proxy path in Static Web App)
-const apiBaseUrl = "/api/BookingApi";
+const apiBaseUrl = "https://chamber-booking-api-acckatb7dmbwc2gu.eastasia-01.azurewebsites.net/api/BookingApi";
+
 
 document.getElementById('addBookingBtn').addEventListener('click', () => {
     document.getElementById('overlay').style.display = 'block';
