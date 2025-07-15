@@ -3,32 +3,32 @@ let holidays = [];
 let isDragging = false;
 let selectedCells = [];
 let allBookings = [];
+let editingBooking = null; // 🆕 track if we are editing
 
-// ✅ API base URL
 const apiBaseUrl = "/api/BookingApi";
 
-// 🎯 Open "Add Booking" popup
+// ✅ Open "Add Booking" popup
 document.getElementById('addBookingBtn').addEventListener('click', () => {
-    document.getElementById('overlay').style.display = 'block';
-    document.getElementById('manualPopup').style.display = 'block';
+    openManualBookingPopup();
 });
 
-// 🎯 Open "View/Edit Bookings" popup
+// ✅ Open "View/Edit Bookings" popup
 document.getElementById('viewBookingsBtn').addEventListener('click', () => {
     document.getElementById('overlay').style.display = 'block';
     document.getElementById('viewBookings').style.display = 'block';
     displayAllBookings();
 });
 
-// 🎯 Refresh button
+// ✅ Refresh button
 document.getElementById('refreshBtn').addEventListener('click', () => {
     fetchAndRenderBookings();
 });
 
-// 🎯 Close popups
+// ✅ Close popups
 function closeManualPopup() {
     document.getElementById('overlay').style.display = 'none';
     document.getElementById('manualPopup').style.display = 'none';
+    editingBooking = null; // 🆕 Reset edit mode
 }
 function closeViewBookings() {
     document.getElementById('overlay').style.display = 'none';
@@ -43,7 +43,7 @@ function closeConfirm() {
     document.getElementById('confirmBox').style.display = 'none';
 }
 
-// 🎯 Month navigation
+// ✅ Month navigation
 document.getElementById('prevMonth').addEventListener('click', () => {
     currentDate.setMonth(currentDate.getMonth() - 1);
     updateMonthHeader();
@@ -61,7 +61,7 @@ document.getElementById('monthSelect').addEventListener('change', (e) => {
     fetchHolidays(currentDate.getFullYear()).then(fetchAndRenderBookings);
 });
 
-// 🎯 Fetch public holidays
+// ✅ Fetch public holidays
 function fetchHolidays(year) {
     return fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/SG`)
         .then(res => res.json())
@@ -73,7 +73,7 @@ function fetchHolidays(year) {
         });
 }
 
-// 🎯 Fetch and render bookings
+// ✅ Fetch and render bookings
 function fetchAndRenderBookings() {
     fetch(apiBaseUrl, { method: "GET" })
         .then(res => {
@@ -83,23 +83,25 @@ function fetchAndRenderBookings() {
         .then(data => {
             allBookings = data || [];
             renderCalendar();
+            displayAllBookings();
         })
         .catch(err => {
             console.error("Failed to fetch bookings:", err);
             alert("Error loading bookings. See console for details.");
             allBookings = [];
             renderCalendar();
+            displayAllBookings();
         });
 }
 
-// 🎯 Render calendar
+// ✅ Render calendar
 function renderCalendar() {
     const calendar = document.getElementById('calendar');
     calendar.innerHTML = '';
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
-    updateMonthHeader(); // 🆕 Update month header
+    updateMonthHeader();
 
     const monthSelect = document.getElementById('monthSelect');
     monthSelect.innerHTML = '';
@@ -182,6 +184,32 @@ function applyBookingToCalendar(booking) {
     });
 }
 
+// ✅ Open manual booking popup for Add/Edit
+function openManualBookingPopup(booking = null) {
+    document.getElementById('overlay').style.display = 'block';
+    document.getElementById('manualPopup').style.display = 'block';
+
+    if (booking) {
+        // 🆕 Pre-fill fields for edit
+        document.getElementById('manualChamber').value = booking.chamber;
+        document.getElementById('manualStart').value = booking.start;
+        document.getElementById('manualEnd').value = booking.end;
+        document.getElementById('manualProject').value = booking.project;
+        document.getElementById('manualPic').value = booking.pic;
+        document.getElementById('manualColor').value = booking.color;
+        editingBooking = booking; // 🆕 Mark as editing
+    } else {
+        // Clear fields for new booking
+        document.getElementById('manualChamber').value = "1";
+        document.getElementById('manualStart').value = "";
+        document.getElementById('manualEnd').value = "";
+        document.getElementById('manualProject').value = "";
+        document.getElementById('manualPic').value = "";
+        document.getElementById('manualColor').value = "#4caf50";
+        editingBooking = null;
+    }
+}
+
 function displayAllBookings() {
     const listDiv = document.getElementById('bookingsList');
     listDiv.innerHTML = ''; // Clear previous content
@@ -214,11 +242,9 @@ function displayAllBookings() {
                             <button class="delete-btn">Delete</button>
                         </div>
                     </div>`;
-
-                // 🆕 Attach event listeners for Teams
-                item.querySelector('.edit-btn').addEventListener('click', () => editBooking(b));
+                // 🆕 Attach event listeners
+                item.querySelector('.edit-btn').addEventListener('click', () => openManualBookingPopup(b));
                 item.querySelector('.delete-btn').addEventListener('click', () => deleteBooking(idx));
-
                 section.appendChild(item);
             });
         }
@@ -236,56 +262,129 @@ function saveManualBooking() {
         color: document.getElementById('manualColor').value
     };
 
-    fetch(apiBaseUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(booking)
-    })
-    .then(res => {
-        if (!res.ok) throw new Error("Failed to save booking.");
-        return res.json();
-    })
-    .then(() => {
-        closeManualPopup();
-        fetchAndRenderBookings();
-    })
-    .catch(err => alert("Error saving booking: " + err.message));
+    // 🆕 Editing existing booking
+    if (editingBooking) {
+        booking.rowKey = editingBooking.rowKey;
+        fetch(`${apiBaseUrl}?rowKey=${booking.rowKey}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(booking)
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Failed to update booking.");
+            return res.json();
+        })
+        .then(() => {
+            closeManualPopup();
+            fetchAndRenderBookings();
+        })
+        .catch(err => alert("Error updating booking: " + err.message));
+    } else {
+        // Create new booking
+        fetch(apiBaseUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(booking)
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Failed to save booking.");
+            return res.json();
+        })
+        .then(() => {
+            closeManualPopup();
+            fetchAndRenderBookings();
+        })
+        .catch(err => alert("Error saving booking: " + err.message));
+    }
 }
 
-function deleteBooking(index) {
-    const booking = allBookings[index];
+// ✅ Drag-to-delete partial
+function endSelection() {
+    isDragging = false;
+    document.removeEventListener('mouseup', endSelection);
 
-    document.getElementById('confirmMessage').textContent =
-        `Delete booking for "${booking.project}" from ${booking.start} to ${booking.end}?`;
-    document.getElementById('confirmBox').style.display = 'block';
+    if (selectedCells.length === 0) return;
 
-    const yesBtn = document.getElementById('confirmYes');
-    const noBtn = document.getElementById('confirmNo');
+    const bookingsToUpdate = [];
 
-    yesBtn.replaceWith(yesBtn.cloneNode(true));
-    noBtn.replaceWith(noBtn.cloneNode(true));
-
-    document.getElementById('confirmYes').addEventListener('click', () => {
-        document.getElementById('confirmBox').style.display = 'none';
-        fetch(`${apiBaseUrl}?rowKey=${booking.rowKey}`, { method: "DELETE" })
-            .then(res => {
-                if (!res.ok) throw new Error("Failed to delete booking.");
-                return res.json();
-            })
-            .then(() => {
-                allBookings.splice(index, 1);
-                renderCalendar();
-                displayAllBookings();
-            })
-            .catch(err => alert("Error deleting booking: " + err.message));
+    selectedCells.forEach(cell => {
+        const booking = allBookings.find(
+            b =>
+                b.chamber === cell.dataset.chamber &&
+                new Date(b.start) <= new Date(cell.dataset.date) &&
+                new Date(b.end) >= new Date(cell.dataset.date)
+        );
+        if (booking) {
+            if (!bookingsToUpdate.includes(booking)) {
+                bookingsToUpdate.push(booking);
+            }
+        }
     });
 
-    document.getElementById('confirmNo').addEventListener('click', () => {
-        document.getElementById('confirmBox').style.display = 'none';
-    });
+    if (bookingsToUpdate.length > 0) {
+        showConfirm("Delete selected dates?", () => {
+            bookingsToUpdate.forEach(b => {
+                const newStart = formatDate(new Date(Math.min(...selectedCells
+                    .filter(c => c.dataset.chamber == b.chamber)
+                    .map(c => new Date(c.dataset.date).getTime()))));
+                const newEnd = formatDate(new Date(Math.max(...selectedCells
+                    .filter(c => c.dataset.chamber == b.chamber)
+                    .map(c => new Date(c.dataset.date).getTime()))));
+
+                // Adjust booking by splitting or trimming
+                if (newStart > b.start && newEnd < b.end) {
+                    // Split into two bookings
+                    const part1 = { ...b, end: formatDate(new Date(new Date(newStart).getTime() - 86400000)) };
+                    const part2 = { ...b, start: formatDate(new Date(new Date(newEnd).getTime() + 86400000)) };
+                    fetch(apiBaseUrl, {
+                        method: "DELETE",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ rowKey: b.rowKey })
+                    })
+                    .then(() => {
+                        return Promise.all([
+                            fetch(apiBaseUrl, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(part1)
+                            }),
+                            fetch(apiBaseUrl, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(part2)
+                            })
+                        ]);
+                    });
+                } else if (newStart > b.start) {
+                    // Trim end
+                    fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ ...b, end: formatDate(new Date(new Date(newStart).getTime() - 86400000)) })
+                    });
+                } else if (newEnd < b.end) {
+                    // Trim start
+                    fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ ...b, start: formatDate(new Date(new Date(newEnd).getTime() + 86400000)) })
+                    });
+                } else {
+                    // Delete entire booking
+                    fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, {
+                        method: "DELETE"
+                    });
+                }
+            });
+
+            fetchAndRenderBookings();
+        });
+    }
+
+    clearSelection();
 }
 
-// 🎯 Drag-to-select logic
+// ✅ Utility functions
 function startSelection(cell) {
     isDragging = true;
     clearSelection();
@@ -302,98 +401,6 @@ function selectCell(cell) {
         selectedCells.push(cell);
     }
 }
-function endSelection() {
-    isDragging = false;
-    document.removeEventListener('mouseup', endSelection);
-
-    if (selectedCells.length === 0) return;
-
-    const hasBookings = selectedCells.some(cell => cell.classList.contains('booking'));
-
-    if (hasBookings) {
-        document.getElementById('confirmMessage').textContent =
-            "Do you want to delete all selected bookings?";
-        document.getElementById('confirmBox').style.display = 'block';
-
-        const yesBtn = document.getElementById('confirmYes');
-        const noBtn = document.getElementById('confirmNo');
-
-        yesBtn.replaceWith(yesBtn.cloneNode(true));
-        noBtn.replaceWith(noBtn.cloneNode(true));
-
-        document.getElementById('confirmYes').addEventListener('click', () => {
-            document.getElementById('confirmBox').style.display = 'none';
-
-            const bookingsToDelete = [];
-            selectedCells.forEach(cell => {
-                const booking = allBookings.find(
-                    b =>
-                        b.chamber === cell.dataset.chamber &&
-                        new Date(b.start) <= new Date(cell.dataset.date) &&
-                        new Date(b.end) >= new Date(cell.dataset.date)
-                );
-                if (booking && !bookingsToDelete.some(b => b.rowKey === booking.rowKey)) {
-                    bookingsToDelete.push(booking);
-                }
-            });
-
-            Promise.all(
-                bookingsToDelete.map(b =>
-                    fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, { method: "DELETE" })
-                        .then(res => {
-                            if (!res.ok) throw new Error(`Failed to delete booking ${b.project}`);
-                        })
-                )
-            )
-                .then(() => fetchAndRenderBookings())
-                .catch(err => alert("Error deleting one or more bookings: " + err.message));
-
-            clearSelection();
-        });
-
-        document.getElementById('confirmNo').addEventListener('click', () => {
-            document.getElementById('confirmBox').style.display = 'none';
-            clearSelection();
-        });
-        return;
-    }
-
-    const hasHoliday = selectedCells.some(cell => holidays.find(h => h.date === cell.dataset.date));
-    if (hasHoliday && !confirm("Your booking includes public holidays. Continue?")) {
-        clearSelection();
-        return;
-    }
-
-    document.getElementById('overlay').style.display = 'block';
-    document.getElementById('popup').style.display = 'block';
-}
-
-function saveBooking() {
-    const booking = {
-        chamber: selectedCells[0].dataset.chamber,
-        start: selectedCells[0].dataset.date,
-        end: selectedCells[selectedCells.length - 1].dataset.date,
-        project: document.getElementById('projectName').value,
-        pic: document.getElementById('pic').value,
-        color: document.getElementById('color').value
-    };
-
-    fetch(apiBaseUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(booking)
-    })
-    .then(res => {
-        if (!res.ok) throw new Error("Failed to save booking.");
-        return res.json();
-    })
-    .then(() => {
-        closePopup();
-        fetchAndRenderBookings();
-    })
-    .catch(err => alert("Error saving booking: " + err.message));
-}
-
 function clearSelection() {
     selectedCells.forEach(cell => {
         cell.classList.remove('selecting');
@@ -401,18 +408,33 @@ function clearSelection() {
     });
     selectedCells = [];
 }
-
-// 🆕 Update Month Header
 function updateMonthHeader() {
     document.getElementById('currentMonth').textContent =
         `${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()}`;
 }
-
-// 🎯 Singapore-safe date format (YYYY-MM-DD)
 function formatDate(date) {
     return date.getFullYear() + '-' +
         String(date.getMonth() + 1).padStart(2, '0') + '-' +
         String(date.getDate()).padStart(2, '0');
+}
+function showConfirm(message, onConfirm) {
+    const confirmBox = document.getElementById('confirmBox');
+    document.getElementById('confirmMessage').textContent = message;
+    confirmBox.style.display = 'block';
+
+    const yesBtn = document.getElementById('confirmYes');
+    const noBtn = document.getElementById('confirmNo');
+
+    yesBtn.replaceWith(yesBtn.cloneNode(true));
+    noBtn.replaceWith(noBtn.cloneNode(true));
+
+    document.getElementById('confirmYes').addEventListener('click', () => {
+        confirmBox.style.display = 'none';
+        onConfirm();
+    });
+    document.getElementById('confirmNo').addEventListener('click', () => {
+        confirmBox.style.display = 'none';
+    });
 }
 
 // 🚀 On page load
