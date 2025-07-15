@@ -52,7 +52,7 @@ document.getElementById('monthSelect').addEventListener('change', (e) => {
 
 // 🎯 Fetch public holidays
 function fetchHolidays(year) {
-    return fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/SG`)
+    return fetch(https://date.nager.at/api/v3/PublicHolidays/${year}/SG)
         .then(res => res.json())
         .then(data => {
             holidays = data.map(h => ({ date: h.date, name: h.localName }));
@@ -64,9 +64,11 @@ function fetchHolidays(year) {
 
 // 🎯 Fetch and render bookings
 function fetchAndRenderBookings() {
-    fetch(apiBaseUrl, { method: "GET" })
+    fetch(apiBaseUrl, {
+        method: "GET"
+    })
     .then(res => {
-        if (!res.ok) throw new Error(`API GET failed: ${res.status}`);
+        if (!res.ok) throw new Error(API GET failed: ${res.status});
         return res.json();
     })
     .then(data => {
@@ -75,7 +77,7 @@ function fetchAndRenderBookings() {
     })
     .catch(err => {
         console.error("Failed to fetch bookings:", err);
-        showInlinePrompt("Error loading bookings.", "error");
+        alert("Error loading bookings. See console for details.");
         allBookings = [];
         renderCalendar();
     });
@@ -155,7 +157,6 @@ function renderCalendar() {
     allBookings.forEach(b => applyBookingToCalendar(b));
 }
 
-// 🎯 Fix timezone shift & apply booking
 function applyBookingToCalendar(booking) {
     let startDate = new Date(booking.start + "T00:00:00"); // Fix timezone shift
     let endDate = new Date(booking.end + "T00:00:00");
@@ -168,8 +169,6 @@ function applyBookingToCalendar(booking) {
         }
     });
 }
-
-// 🎯 Teams-friendly inline prompt
 function showInlinePrompt(message, type = "info") {
     const promptBox = document.createElement('div');
     promptBox.className = `inline-prompt ${type}`;
@@ -177,8 +176,6 @@ function showInlinePrompt(message, type = "info") {
     document.body.appendChild(promptBox);
     setTimeout(() => promptBox.remove(), 3000);
 }
-
-// 🎯 Confirm action (Teams safe)
 function confirmAction(message, callback) {
     const overlay = document.getElementById('overlay');
     const promptDiv = document.createElement('div');
@@ -202,6 +199,45 @@ function confirmAction(message, callback) {
         promptDiv.remove();
         callback(false);
     };
+}
+// 🎯 Display all bookings in popup
+function displayAllBookings() {
+    const listDiv = document.getElementById('bookingsList');
+    listDiv.innerHTML = ''; // Clear previous content
+
+    for (let chamber = 1; chamber <= 3; chamber++) {
+        const section = document.createElement('div');
+        section.className = 'chamber-section';
+        section.innerHTML = <h4>Chamber ${chamber}</h4>;
+
+        const chamberBookings = allBookings.filter(b => b.chamber == chamber);
+
+        if (chamberBookings.length === 0) {
+            const emptyMsg = document.createElement('p');
+            emptyMsg.className = 'no-bookings';
+            emptyMsg.textContent = "No bookings for this chamber.";
+            section.appendChild(emptyMsg);
+        } else {
+            chamberBookings.forEach((b, idx) => {
+                const item = document.createElement('div');
+                item.className = 'booking-item';
+                item.innerHTML = 
+                    <div class="top-row">
+                        <span class="name">${b.project}</span>
+                        <span class="pic">${b.pic}</span>
+                    </div>
+                    <div class="bottom-row">
+                        <span class="date">${b.start} to ${b.end}</span>
+                        <div class="booking-actions">
+                            <button onclick="editBooking(allBookings[${idx}])">Edit</button>
+                            <button onclick="deleteBooking(${idx})">Delete</button>
+                        </div>
+                    </div>;
+                section.appendChild(item);
+            });
+        }
+        listDiv.appendChild(section);
+    }
 }
 
 // 🎯 Save booking
@@ -237,6 +273,7 @@ function saveManualBooking() {
     .catch(err => showInlinePrompt("Error saving booking.", "error"));
 }
 
+
 // 🎯 Delete booking
 function deleteBooking(index) {
     const booking = allBookings[index];
@@ -258,8 +295,121 @@ function deleteBooking(index) {
     });
 }
 
+// 🎯 Drag to select cells
+function startSelection(cell) {
+    isDragging = true;
+    clearSelection();
+    selectCell(cell);
+    document.addEventListener('mouseup', endSelection);
+}
+
+function selectCell(cell) {
+    if (isDragging) {
+        if (cell.classList.contains('booking')) {
+            cell.classList.add('deleting'); // 🔴 Highlight booked cells in red
+        } else {
+            cell.classList.add('selecting');
+        }
+        selectedCells.push(cell);
+    }
+}
+
+function endSelection() {
+    isDragging = false;
+    document.removeEventListener('mouseup', endSelection);
+
+    if (selectedCells.length === 0) return;
+
+    const hasBookings = selectedCells.some(cell => cell.classList.contains('booking'));
+
+    if (hasBookings) {
+        if (confirm("Do you want to delete all selected bookings?")) {
+            const bookingsToDelete = [];
+
+            selectedCells.forEach(cell => {
+                const booking = allBookings.find(
+                    b =>
+                        b.chamber === cell.dataset.chamber &&
+                        new Date(b.start) <= new Date(cell.dataset.date) &&
+                        new Date(b.end) >= new Date(cell.dataset.date)
+                );
+                if (booking && !bookingsToDelete.some(b => b.rowKey === booking.rowKey)) {
+                    bookingsToDelete.push(booking);
+                }
+            });
+
+            Promise.all(
+                bookingsToDelete.map(b =>
+                    fetch(${apiBaseUrl}?rowKey=${b.rowKey}, { method: "DELETE" })
+                        .then(res => {
+                            if (!res.ok) throw new Error(Failed to delete booking ${b.project});
+                        })
+                )
+            )
+                .then(() => {
+                    alert("Selected bookings deleted successfully.");
+                    fetchAndRenderBookings();
+                })
+                .catch(err => alert("Error deleting one or more bookings: " + err.message));
+        }
+        clearSelection();
+        return;
+    }
+
+    const hasHoliday = selectedCells.some(cell => holidays.find(h => h.date === cell.dataset.date));
+    if (hasHoliday && !confirm("Your booking includes public holidays. Continue?")) {
+        clearSelection();
+        return;
+    }
+
+    // No bookings in selected cells, open normal booking popup
+    document.getElementById('overlay').style.display = 'block';
+    document.getElementById('popup').style.display = 'block';
+}
+
+// 🎯 Save booking from drag popup
+function saveBooking() {
+    const start = selectedCells[0].dataset.date;
+    const end = selectedCells[selectedCells.length - 1].dataset.date;
+    if (new Date(start) > new Date(end)) {
+        alert("End date cannot be earlier than start date.");
+        return;
+    }
+    const booking = {
+        chamber: selectedCells[0].dataset.chamber,
+        start,
+        end,
+        project: document.getElementById('projectName').value,
+        pic: document.getElementById('pic').value,
+        color: document.getElementById('color').value
+    };
+
+    fetch(apiBaseUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(booking)
+    })
+    .then(res => {
+        if (!res.ok) throw new Error("Failed to save booking.");
+        return res.json();
+    })
+    .then(() => {
+        closePopup();
+        fetchAndRenderBookings();
+    })
+    .catch(err => alert("Error saving booking: " + err.message));
+}
+
+function clearSelection() {
+    selectedCells.forEach(cell => {
+        cell.classList.remove('selecting');
+        cell.classList.remove('deleting');
+    });
+    selectedCells = [];
+}
+
 function formatDate(date) {
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split('T')[0]; // Fixed: ensures date is not shifted by timezone
 }
 
 // 🚀 On page load
