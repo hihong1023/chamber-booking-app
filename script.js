@@ -211,6 +211,14 @@ function renderCalendar() {
         startDate.setDate(startDate.getDate() + 7);
         weekNum++;
     }
+    // Clear all booking styles/content before re-applying
+    document.querySelectorAll('td[data-chamber]').forEach(cell => {
+        cell.classList.remove('booking');
+        cell.style.backgroundColor = '';
+        cell.innerHTML = '';
+    });
+    
+
     allBookings.forEach(b => applyBookingToCalendar(b));
 }
 
@@ -231,13 +239,12 @@ function applyBookingToCalendar(booking) {
             cell.appendChild(projectSpan);
             cell.appendChild(br);
             cell.appendChild(picSmall);
-        } else {
-            cell.classList.remove('booking');
-            cell.style.backgroundColor = '';
-            cell.innerHTML = '';
         }
+        // ⚠️ Do NOT clear cell content if not in this booking range!
+        // (No else block here!)
     });
 }
+
 
 // ✅ Holiday Check Utility
 function hasHolidayInRange(start, end) {
