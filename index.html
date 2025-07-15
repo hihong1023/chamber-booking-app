@@ -6,8 +6,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<h1>Chamber Booking Calendar <span id="currentMonth" style="font-size: 0.8em; color: #555;"></span></h1>
-
+<h1>Chamber Booking Calendar <span id="currentMonth"></span></h1>
 <div class="controls">
     <button id="prevMonth">◀ Prev</button>
     <div class="month-group">
@@ -22,19 +21,9 @@
 <div id="calendar"></div>
 <div class="overlay" id="overlay"></div>
 
-<!-- Popup for Drag Booking -->
-<div class="popup" id="popup">
-    <h3>New Booking</h3>
-    <input type="text" id="projectName" placeholder="Project Name">
-    <input type="text" id="pic" placeholder="Person in Charge (PIC)">
-    <input type="color" id="color" value="#4caf50">
-    <button onclick="saveBooking()">Save Booking</button>
-    <button onclick="closePopup()">Cancel</button>
-</div>
-
-<!-- Popup for Manual Booking -->
+<!-- ✅ Popup for Manual Booking -->
 <div class="manual-popup" id="manualPopup">
-    <h3>Manually Add Booking</h3>
+    <h3>Add / Edit Booking</h3>
     <label for="manualChamber">Chamber:</label>
     <select id="manualChamber">
         <option value="1">Chamber 1</option>
@@ -52,20 +41,18 @@
     <button onclick="closeManualPopup()">Cancel</button>
 </div>
 
-<!-- Popup to View/Edit All Bookings -->
+<!-- ✅ Popup to View/Edit All Bookings -->
 <div class="view-bookings-popup" id="viewBookings">
     <h3>View/Edit Bookings</h3>
     <div id="bookingsList"></div>
     <button onclick="closeViewBookings()" style="width:100%;margin-top:10px;">Close</button>
 </div>
 
-<!-- 🆕 Teams-friendly Confirm Modal -->
+<!-- ✅ Custom Confirm Modal -->
 <div id="confirmBox" class="popup" style="display:none;">
     <p id="confirmMessage"></p>
-    <div style="text-align: center; margin-top: 10px;">
-        <button id="confirmYes" style="margin-right: 10px;">Yes</button>
-        <button id="confirmNo">No</button>
-    </div>
+    <button id="confirmYes">Yes</button>
+    <button id="confirmNo">No</button>
 </div>
 
 <script src="script.js"></script>
