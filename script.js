@@ -80,7 +80,7 @@ function fetchAndRenderBookings() {
         })
         .catch(err => {
             console.error("Failed to fetch bookings:", err);
-            alert("Error loading bookings. See console for details.");
+            showPopup("❌ Error loading bookings. Please try again.");
             allBookings = [];
             renderCalendar();
             displayAllBookings();
@@ -133,7 +133,7 @@ function renderCalendar() {
             if (holiday) {
                 th.className = 'holiday-header';
             } else if (day.getDay() === 0 || day.getDay() === 6) {
-                th.className = 'weekend-header';
+                th.className = 'weekend-header'; // Grey out Sat/Sun
             } else {
                 th.className = 'day-header';
             }
@@ -174,6 +174,14 @@ function applyBookingToCalendar(booking) {
     });
 }
 
+// ✅ Holiday Check Utility
+function hasHolidayInRange(start, end) {
+    return holidays.some(h => {
+        const hDate = new Date(h.date);
+        return hDate >= new Date(start) && hDate <= new Date(end);
+    });
+}
+
 // ✅ Open manual booking popup for Add/Edit
 function openManualBookingPopup(booking = null) {
     closeViewBookings();
@@ -209,8 +217,16 @@ function saveManualBooking() {
         color: document.getElementById('manualColor').value
     };
 
+    if (hasHolidayInRange(booking.start, booking.end)) {
+        showPopup("⚠️ Your booking includes public holidays. Continue?", () => processSaveBooking(booking));
+    } else {
+        processSaveBooking(booking);
+    }
+}
+
+function processSaveBooking(booking) {
     if (!isBookingValid(booking, editingBooking ? editingBooking.rowKey : null)) {
-        alert("Booking overlaps with another booking.");
+        showPopup("❌ Booking overlaps with another booking.");
         return;
     }
 
@@ -229,7 +245,7 @@ function saveManualBooking() {
             closeManualPopup();
             fetchAndRenderBookings();
         })
-        .catch(err => alert("Error updating booking: " + err.message));
+        .catch(err => showPopup("❌ Error updating booking."));
     } else {
         fetch(apiBaseUrl, {
             method: "POST",
@@ -244,7 +260,7 @@ function saveManualBooking() {
             closeManualPopup();
             fetchAndRenderBookings();
         })
-        .catch(err => alert("Error saving booking: " + err.message));
+        .catch(err => showPopup("❌ Error saving booking."));
     }
 }
 
@@ -261,6 +277,27 @@ function isBookingValid(newBooking, ignoreRowKey = null) {
         const existingEnd = new Date(existing.end);
 
         return (newStart <= existingEnd && newEnd >= existingStart);
+    });
+}
+
+// ✅ Teams-friendly popup
+function showPopup(message, onConfirm = null) {
+    const confirmBox = document.getElementById('confirmBox');
+    document.getElementById('confirmMessage').textContent = message;
+    confirmBox.style.display = 'block';
+
+    const yesBtn = document.getElementById('confirmYes');
+    const noBtn = document.getElementById('confirmNo');
+
+    yesBtn.replaceWith(yesBtn.cloneNode(true));
+    noBtn.replaceWith(noBtn.cloneNode(true));
+
+    document.getElementById('confirmYes').addEventListener('click', () => {
+        confirmBox.style.display = 'none';
+        if (onConfirm) onConfirm();
+    });
+    document.getElementById('confirmNo').addEventListener('click', () => {
+        confirmBox.style.display = 'none';
     });
 }
 
@@ -282,7 +319,7 @@ function displayAllBookings() {
             emptyMsg.textContent = "No bookings for this chamber.";
             section.appendChild(emptyMsg);
         } else {
-            chamberBookings.forEach((b, idx) => {
+            chamberBookings.forEach(b => {
                 const item = document.createElement('div');
                 item.className = 'booking-item';
                 item.innerHTML = `
@@ -305,10 +342,10 @@ function displayAllBookings() {
 
                 // 🗑️ Delete button
                 item.querySelector('.delete-btn').addEventListener('click', () => {
-                    showConfirm(`Delete booking for "${b.project}"?`, () => {
+                    showPopup(`Delete booking for "${b.project}"?`, () => {
                         fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, { method: "DELETE" })
                             .then(() => fetchAndRenderBookings())
-                            .catch(err => alert("Error deleting booking: " + err.message));
+                            .catch(err => showPopup("❌ Error deleting booking."));
                         closeViewBookings();
                     });
                 });
@@ -320,8 +357,21 @@ function displayAllBookings() {
     }
 }
 
-// ✅ Custom confirm box (Teams friendly)
-function showConfirm(message, onConfirm) {
+// ✅ Update month header text
+function updateMonthHeader() {
+    document.getElementById('currentMonth').textContent =
+        `${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()}`;
+}
+
+// ✅ Format date as YYYY-MM-DD
+function formatDate(date) {
+    return date.getFullYear() + '-' +
+        String(date.getMonth() + 1).padStart(2, '0') + '-' +
+        String(date.getDate()).padStart(2, '0');
+}
+
+// ✅ Teams-friendly popup (confirm modal)
+function showPopup(message, onConfirm = null) {
     const confirmBox = document.getElementById('confirmBox');
     document.getElementById('confirmMessage').textContent = message;
     confirmBox.style.display = 'block';
@@ -329,17 +379,20 @@ function showConfirm(message, onConfirm) {
     const yesBtn = document.getElementById('confirmYes');
     const noBtn = document.getElementById('confirmNo');
 
+    // Clean old listeners
     yesBtn.replaceWith(yesBtn.cloneNode(true));
     noBtn.replaceWith(noBtn.cloneNode(true));
 
+    // Attach new listeners
     document.getElementById('confirmYes').addEventListener('click', () => {
         confirmBox.style.display = 'none';
-        onConfirm();
+        if (onConfirm) onConfirm();
     });
     document.getElementById('confirmNo').addEventListener('click', () => {
         confirmBox.style.display = 'none';
     });
 }
 
-// 🚀 On page load
+// ✅ Initial page load
 fetchHolidays(currentDate.getFullYear()).then(fetchAndRenderBookings);
+
