@@ -21,7 +21,7 @@ document.getElementById('viewBookingsBtn').addEventListener('click', () => {
 });
 
 // 🎯 Close popups
-function closeManualPopup() {
+function closeManualPopup() {F
     document.getElementById('overlay').style.display = 'none';
     document.getElementById('manualPopup').style.display = 'none';
 }
@@ -124,7 +124,13 @@ function renderCalendar() {
             const th = document.createElement('th');
             const dateISO = formatDate(day);
             const holiday = holidays.find(h => h.date === dateISO);
-            th.className = holiday ? 'holiday-header' : 'day-header';
+            if (holiday) {
+                th.className = 'holiday-header';
+            } else if (day.getDay() === 0 || day.getDay() === 6) {
+                th.className = 'weekend-header'; // 🆕 grey weekend header
+            } else {
+                th.className = 'day-header';
+            }
             th.innerHTML = `${day.toLocaleString('default', { weekday: 'short' })}<br>${day.getDate()}${holiday ? `<br><small>${holiday.name}</small>` : ''}`;
             dayRow.appendChild(th);
         }
@@ -356,6 +362,26 @@ function clearSelection() {
         cell.classList.remove('deleting');
     });
     selectedCells = [];
+}
+// 🎯 Teams-friendly confirmation
+function showConfirm(message, onConfirm) {
+    const confirmBox = document.getElementById('confirmBox');
+    document.getElementById('confirmMessage').textContent = message;
+    confirmBox.style.display = 'block';
+
+    document.getElementById('confirmYes').onclick = function () {
+        confirmBox.style.display = 'none';
+        onConfirm();
+    }
+    document.getElementById('confirmNo').onclick = function () {
+        confirmBox.style.display = 'none';
+    }
+}
+
+// 🆕 Update Month Header
+function updateMonthHeader() {
+    document.getElementById('currentMonth').textContent =
+        `${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()}`;
 }
 
 // 🎯 Singapore-safe date format (YYYY-MM-DD)
