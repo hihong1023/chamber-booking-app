@@ -3,7 +3,7 @@ let holidays = [];
 let isDragging = false;
 let selectedCells = [];
 let allBookings = [];
-let editingBooking = null; // 🆕 track if we are editing
+let editingBooking = null; // Track edit mode
 
 const apiBaseUrl = "/api/BookingApi";
 
@@ -28,7 +28,7 @@ document.getElementById('refreshBtn').addEventListener('click', () => {
 function closeManualPopup() {
     document.getElementById('overlay').style.display = 'none';
     document.getElementById('manualPopup').style.display = 'none';
-    editingBooking = null; // 🆕 Reset edit mode
+    editingBooking = null;
 }
 function closeViewBookings() {
     document.getElementById('overlay').style.display = 'none';
@@ -140,7 +140,7 @@ function renderCalendar() {
             if (holiday) {
                 th.className = 'holiday-header';
             } else if (day.getDay() === 0 || day.getDay() === 6) {
-                th.className = 'weekend-header'; // 🆕 grey Sat/Sun headers
+                th.className = 'weekend-header'; // Grey out Sat/Sun
             } else {
                 th.className = 'day-header';
             }
@@ -186,20 +186,19 @@ function applyBookingToCalendar(booking) {
 
 // ✅ Open manual booking popup for Add/Edit
 function openManualBookingPopup(booking = null) {
+    closeViewBookings(); // 🆕 Close View/Edit popup
     document.getElementById('overlay').style.display = 'block';
     document.getElementById('manualPopup').style.display = 'block';
 
     if (booking) {
-        // 🆕 Pre-fill fields for edit
         document.getElementById('manualChamber').value = booking.chamber;
         document.getElementById('manualStart').value = booking.start;
         document.getElementById('manualEnd').value = booking.end;
         document.getElementById('manualProject').value = booking.project;
         document.getElementById('manualPic').value = booking.pic;
         document.getElementById('manualColor').value = booking.color;
-        editingBooking = booking; // 🆕 Mark as editing
+        editingBooking = booking;
     } else {
-        // Clear fields for new booking
         document.getElementById('manualChamber').value = "1";
         document.getElementById('manualStart').value = "";
         document.getElementById('manualEnd').value = "";
@@ -242,9 +241,15 @@ function displayAllBookings() {
                             <button class="delete-btn">Delete</button>
                         </div>
                     </div>`;
-                // 🆕 Attach event listeners
                 item.querySelector('.edit-btn').addEventListener('click', () => openManualBookingPopup(b));
-                item.querySelector('.delete-btn').addEventListener('click', () => deleteBooking(idx));
+                item.querySelector('.delete-btn').addEventListener('click', () => {
+                    showConfirm(`Delete booking for "${b.project}"?`, () => {
+                        fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, { method: "DELETE" })
+                            .then(() => fetchAndRenderBookings())
+                            .catch(err => alert("Error deleting booking: " + err.message));
+                        closeViewBookings();
+                    });
+                });
                 section.appendChild(item);
             });
         }
@@ -298,7 +303,6 @@ function saveManualBooking() {
     }
 }
 
-// ✅ Drag-to-delete partial
 function endSelection() {
     isDragging = false;
     document.removeEventListener('mouseup', endSelection);
@@ -314,77 +318,72 @@ function endSelection() {
                 new Date(b.start) <= new Date(cell.dataset.date) &&
                 new Date(b.end) >= new Date(cell.dataset.date)
         );
-        if (booking) {
-            if (!bookingsToUpdate.includes(booking)) {
-                bookingsToUpdate.push(booking);
-            }
+        if (booking && !bookingsToUpdate.includes(booking)) {
+            bookingsToUpdate.push(booking);
         }
     });
 
     if (bookingsToUpdate.length > 0) {
         showConfirm("Delete selected dates?", () => {
             bookingsToUpdate.forEach(b => {
-                const newStart = formatDate(new Date(Math.min(...selectedCells
+                const selectedDates = selectedCells
                     .filter(c => c.dataset.chamber == b.chamber)
-                    .map(c => new Date(c.dataset.date).getTime()))));
-                const newEnd = formatDate(new Date(Math.max(...selectedCells
-                    .filter(c => c.dataset.chamber == b.chamber)
-                    .map(c => new Date(c.dataset.date).getTime()))));
+                    .map(c => new Date(c.dataset.date));
+
+                const minDate = new Date(Math.min(...selectedDates));
+                const maxDate = new Date(Math.max(...selectedDates));
 
                 // Adjust booking by splitting or trimming
-                if (newStart > b.start && newEnd < b.end) {
+                if (minDate > new Date(b.start) && maxDate < new Date(b.end)) {
                     // Split into two bookings
-                    const part1 = { ...b, end: formatDate(new Date(new Date(newStart).getTime() - 86400000)) };
-                    const part2 = { ...b, start: formatDate(new Date(new Date(newEnd).getTime() + 86400000)) };
-                    fetch(apiBaseUrl, {
-                        method: "DELETE",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ rowKey: b.rowKey })
-                    })
-                    .then(() => {
-                        return Promise.all([
-                            fetch(apiBaseUrl, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify(part1)
-                            }),
-                            fetch(apiBaseUrl, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify(part2)
-                            })
-                        ]);
-                    });
-                } else if (newStart > b.start) {
+                    const part1 = { ...b, end: formatDate(new Date(minDate.getTime() - 86400000)) };
+                    const part2 = { ...b, start: formatDate(new Date(maxDate.getTime() + 86400000)) };
+                    fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, { method: "DELETE" })
+                        .then(() => {
+                            return Promise.all([
+                                fetch(apiBaseUrl, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify(part1)
+                                }),
+                                fetch(apiBaseUrl, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify(part2)
+                                })
+                            ]);
+                        });
+                } else if (minDate > new Date(b.start)) {
                     // Trim end
                     fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ ...b, end: formatDate(new Date(new Date(newStart).getTime() - 86400000)) })
+                        body: JSON.stringify({ ...b, end: formatDate(new Date(minDate.getTime() - 86400000)) })
                     });
-                } else if (newEnd < b.end) {
+                } else if (maxDate < new Date(b.end)) {
                     // Trim start
                     fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ ...b, start: formatDate(new Date(new Date(newEnd).getTime() + 86400000)) })
+                        body: JSON.stringify({ ...b, start: formatDate(new Date(maxDate.getTime() + 86400000)) })
                     });
                 } else {
                     // Delete entire booking
-                    fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, {
-                        method: "DELETE"
-                    });
+                    fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, { method: "DELETE" });
                 }
             });
 
             fetchAndRenderBookings();
         });
+    } else {
+        // No existing booking, create new
+        document.getElementById('overlay').style.display = 'block';
+        document.getElementById('popup').style.display = 'block';
     }
 
     clearSelection();
 }
 
-// ✅ Utility functions
 function startSelection(cell) {
     isDragging = true;
     clearSelection();
