@@ -87,21 +87,16 @@ function fetchAndRenderBookings() {
 function renderCalendar() {
     const calendar = document.getElementById('calendar');
     calendar.innerHTML = '';
-
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const monthName = currentDate.toLocaleString('default', { month: 'long' });
-
-    // 🆕 Display current month beside title
-    document.querySelector('h1').innerHTML = `Chamber Booking Calendar <span style="font-size:0.8em;color:#666">(${monthName} ${year})</span>`;
 
     const monthSelect = document.getElementById('monthSelect');
     monthSelect.innerHTML = '';
     for (let y = year - 1; y <= year + 1; y++) {
         for (let m = 0; m < 12; m++) {
             const option = document.createElement('option');
-            option.value = `${y}-${m + 1}`;
-            option.text = `${new Date(y, m).toLocaleString('default', { month: 'long' })} ${y}`;
+            option.value = ${y}-${m + 1};
+            option.text = ${new Date(y, m).toLocaleString('default', { month: 'long' })} ${y};
             if (y === year && m === month) option.selected = true;
             monthSelect.appendChild(option);
         }
@@ -120,7 +115,7 @@ function renderCalendar() {
         let dayRow = document.createElement('tr');
         let weekTitle = document.createElement('th');
         weekTitle.className = 'week-title';
-        weekTitle.innerHTML = `Week ${weekNum}: ${formatDate(startDate)} – ${formatDate(new Date(startDate.getTime() + 6 * 86400000))}`;
+        weekTitle.innerHTML = Week ${weekNum}: ${formatDate(startDate)} – ${formatDate(new Date(startDate.getTime() + 6 * 86400000))};
         dayRow.appendChild(weekTitle);
 
         for (let i = 0; i < 7; i++) {
@@ -130,14 +125,14 @@ function renderCalendar() {
             const dateStr = formatDate(day);
             const holiday = holidays.find(h => h.date === dateStr);
             th.className = holiday ? 'holiday-header' : 'day-header';
-            th.innerHTML = `${day.toLocaleString('default', { weekday: 'short' })}<br>${day.getDate()}${holiday ? `<br><small>${holiday.name}</small>` : ''}`;
+            th.innerHTML = ${day.toLocaleString('default', { weekday: 'short' })}<br>${day.getDate()}${holiday ? <br><small>${holiday.name}</small> : ''};
             dayRow.appendChild(th);
         }
         table.appendChild(dayRow);
 
         for (let chamber = 1; chamber <= 3; chamber++) {
             let row = document.createElement('tr');
-            row.innerHTML = `<td class="chamber-name">Chamber ${chamber}</td>`;
+            row.innerHTML = <td class="chamber-name">Chamber ${chamber}</td>;
             for (let i = 0; i < 7; i++) {
                 let cell = document.createElement('td');
                 let cellDate = new Date(startDate.getTime() + i * 86400000);
@@ -158,48 +153,18 @@ function renderCalendar() {
 }
 
 function applyBookingToCalendar(booking) {
-    let startDate = new Date(booking.start + "T00:00:00"); // Fix timezone shift
-    let endDate = new Date(booking.end + "T00:00:00");
-    document.querySelectorAll(`td[data-chamber='${booking.chamber}']`).forEach(cell => {
-        const cellDate = new Date(cell.dataset.date + "T00:00:00");
+    let startDate = new Date(booking.start);
+    let endDate = new Date(booking.end);
+    document.querySelectorAll(td[data-chamber='${booking.chamber}']).forEach(cell => {
+        const cellDate = new Date(cell.dataset.date);
         if (cellDate >= startDate && cellDate <= endDate) {
             cell.classList.add('booking');
             cell.style.backgroundColor = booking.color || '#4caf50';
-            cell.innerHTML = `<b>${booking.project}</b><br><small>${booking.pic}</small>`;
+            cell.innerHTML = ${booking.project}<br><small>${booking.pic}</small>;
         }
     });
 }
-function showInlinePrompt(message, type = "info") {
-    const promptBox = document.createElement('div');
-    promptBox.className = `inline-prompt ${type}`;
-    promptBox.innerHTML = message;
-    document.body.appendChild(promptBox);
-    setTimeout(() => promptBox.remove(), 3000);
-}
-function confirmAction(message, callback) {
-    const overlay = document.getElementById('overlay');
-    const promptDiv = document.createElement('div');
-    promptDiv.className = 'confirmation-prompt';
-    promptDiv.innerHTML = `
-        <p>${message}</p>
-        <div class="prompt-buttons">
-            <button id="confirmYes">Yes</button>
-            <button id="confirmNo">No</button>
-        </div>`;
-    overlay.appendChild(promptDiv);
-    overlay.style.display = 'block';
 
-    document.getElementById('confirmYes').onclick = () => {
-        overlay.style.display = 'none';
-        promptDiv.remove();
-        callback(true);
-    };
-    document.getElementById('confirmNo').onclick = () => {
-        overlay.style.display = 'none';
-        promptDiv.remove();
-        callback(false);
-    };
-}
 // 🎯 Display all bookings in popup
 function displayAllBookings() {
     const listDiv = document.getElementById('bookingsList');
@@ -245,7 +210,7 @@ function saveManualBooking() {
     const start = document.getElementById('manualStart').value;
     const end = document.getElementById('manualEnd').value;
     if (new Date(start) > new Date(end)) {
-        showInlinePrompt("End date cannot be earlier than start date.", "error");
+        alert("End date cannot be earlier than start date.");
         return;
     }
     const booking = {
@@ -270,29 +235,27 @@ function saveManualBooking() {
         closeManualPopup();
         fetchAndRenderBookings();
     })
-    .catch(err => showInlinePrompt("Error saving booking.", "error"));
+    .catch(err => alert("Error saving booking: " + err.message));
 }
-
 
 // 🎯 Delete booking
 function deleteBooking(index) {
     const booking = allBookings[index];
-    confirmAction("Are you sure you want to delete this booking?", (confirmed) => {
-        if (confirmed) {
-            fetch(`${apiBaseUrl}?rowKey=${booking.rowKey}`, { method: "DELETE" })
-            .then(res => {
-                if (!res.ok) throw new Error("Failed to delete booking.");
-                return res.json();
-            })
-            .then(() => {
-                allBookings.splice(index, 1);
-                renderCalendar();
-                displayAllBookings();
-                showInlinePrompt("Booking deleted.", "success");
-            })
-            .catch(err => showInlinePrompt("Error deleting booking.", "error"));
-        }
-    });
+    if (confirm("Are you sure you want to delete this booking?")) {
+        fetch(${apiBaseUrl}?rowKey=${booking.rowKey}, {
+            method: "DELETE"
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Failed to delete booking.");
+            return res.json();
+        })
+        .then(() => {
+            allBookings.splice(index, 1);
+            renderCalendar();
+            displayAllBookings();
+        })
+        .catch(err => alert("Error deleting booking: " + err.message));
+    }
 }
 
 // 🎯 Drag to select cells
@@ -302,7 +265,6 @@ function startSelection(cell) {
     selectCell(cell);
     document.addEventListener('mouseup', endSelection);
 }
-
 function selectCell(cell) {
     if (isDragging) {
         if (cell.classList.contains('booking')) {
