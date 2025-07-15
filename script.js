@@ -168,26 +168,44 @@ function applyBookingToCalendar(booking) {
 // 🎯 Display all bookings in popup
 function displayAllBookings() {
     const listDiv = document.getElementById('bookingsList');
-    listDiv.innerHTML = '';
+    listDiv.innerHTML = ''; // Clear previous content
 
-    if (allBookings.length === 0) {
-        listDiv.innerHTML = "<p>No bookings found.</p>";
-        return;
+    for (let chamber = 1; chamber <= 3; chamber++) {
+        const section = document.createElement('div');
+        section.className = 'chamber-section';
+        section.innerHTML = `<h4>Chamber ${chamber}</h4>`;
+
+        const chamberBookings = allBookings.filter(b => b.chamber == chamber);
+
+        if (chamberBookings.length === 0) {
+            const emptyMsg = document.createElement('p');
+            emptyMsg.className = 'no-bookings';
+            emptyMsg.textContent = "No bookings for this chamber.";
+            section.appendChild(emptyMsg);
+        } else {
+            chamberBookings.forEach((b, idx) => {
+                const item = document.createElement('div');
+                item.className = 'booking-item';
+                item.innerHTML = `
+                    <div class="top-row">
+                        <span class="name">${b.project}</span>
+                        <span class="pic">${b.pic}</span>
+                    </div>
+                    <div class="bottom-row">
+                        <span class="date">${b.start} to ${b.end}</span>
+                        <div class="booking-actions">
+                            <button onclick="editBooking(allBookings[${idx}])">Edit</button>
+                            <button onclick="deleteBooking(${idx})">Delete</button>
+                        </div>
+                    </div>`;
+                section.appendChild(item);
+            });
+        }
+
+        listDiv.appendChild(section);
     }
-
-    allBookings.forEach((b, index) => {
-        const div = document.createElement('div');
-        div.className = "booking-item";
-        div.innerHTML = `
-            <strong>${b.project}</strong><br>
-            Chamber: ${b.chamber}<br>
-            ${b.start} → ${b.end}<br>
-            PIC: ${b.pic}<br>
-            <button onclick="deleteBooking(${index})">Delete</button>
-        `;
-        listDiv.appendChild(div);
-    });
 }
+
 
 // 🎯 Save booking
 function saveManualBooking() {
@@ -219,17 +237,26 @@ function saveManualBooking() {
 // 🎯 Delete booking
 function deleteBooking(index) {
     const booking = allBookings[index];
-    if (confirm("Delete this booking?")) {
-        fetch(`${apiBaseUrl}?rowKey=${encodeURIComponent(booking.rowKey)}`, {
+    if (confirm("Are you sure you want to delete this booking?")) {
+        fetch(`${apiBaseUrl}?rowKey=${booking.rowKey}`, {
             method: "DELETE"
         })
         .then(res => {
             if (!res.ok) throw new Error("Failed to delete booking.");
-            fetchAndRenderBookings();
+            return res.json();
+        })
+        .then(() => {
+            // 🆕 Remove from local array
+            allBookings.splice(index, 1);
+
+            // 🆕 Refresh calendar and popup
+            renderCalendar();
+            displayAllBookings();
         })
         .catch(err => alert("Error deleting booking: " + err.message));
     }
 }
+
 
 // 🎯 Drag to select cells
 function startSelection(cell) {
@@ -239,30 +266,71 @@ function startSelection(cell) {
     document.addEventListener('mouseup', endSelection);
 }
 function selectCell(cell) {
-    if (isDragging && !cell.classList.contains('booking')) {
-        cell.classList.add('selecting');
+    if (isDragging) {
+        if (cell.classList.contains('booking')) {
+            // Highlight booked cells in red
+            cell.classList.add('deleting');
+        } else {
+            // Highlight empty cells in blue
+            cell.classList.add('selecting');
+        }
         selectedCells.push(cell);
     }
 }
+
 function endSelection() {
     isDragging = false;
     document.removeEventListener('mouseup', endSelection);
-    if (selectedCells.length > 0) {
-        const conflict = selectedCells.some(cell => cell.classList.contains('booking'));
-        if (conflict) {
-            alert("Cannot book: one or more selected dates are already booked.");
-            clearSelection();
-            return;
+
+    if (selectedCells.length === 0) return;
+
+    const hasBookings = selectedCells.some(cell => cell.classList.contains('booking'));
+
+    if (hasBookings) {
+        if (confirm("Do you want to delete all selected bookings?")) {
+            const bookingsToDelete = [];
+
+            selectedCells.forEach(cell => {
+                const booking = allBookings.find(
+                    b =>
+                        b.chamber === cell.dataset.chamber &&
+                        new Date(b.start) <= new Date(cell.dataset.date) &&
+                        new Date(b.end) >= new Date(cell.dataset.date)
+                );
+                if (booking && !bookingsToDelete.some(b => b.rowKey === booking.rowKey)) {
+                    bookingsToDelete.push(booking);
+                }
+            });
+
+            Promise.all(
+                bookingsToDelete.map(b =>
+                    fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, { method: "DELETE" })
+                        .then(res => {
+                            if (!res.ok) throw new Error(`Failed to delete booking ${b.project}`);
+                        })
+                )
+            )
+                .then(() => {
+                    alert("Selected bookings deleted successfully.");
+                    fetchAndRenderBookings();
+                })
+                .catch(err => alert("Error deleting one or more bookings: " + err.message));
         }
-        const hasHoliday = selectedCells.some(cell => holidays.find(h => h.date === cell.dataset.date));
-        if (hasHoliday && !confirm("Your booking includes public holidays. Continue?")) {
-            clearSelection();
-            return;
-        }
-        document.getElementById('overlay').style.display = 'block';
-        document.getElementById('popup').style.display = 'block';
+        clearSelection();
+        return;
     }
+
+    const hasHoliday = selectedCells.some(cell => holidays.find(h => h.date === cell.dataset.date));
+    if (hasHoliday && !confirm("Your booking includes public holidays. Continue?")) {
+        clearSelection();
+        return;
+    }
+
+    // No bookings in selected cells, open normal booking popup
+    document.getElementById('overlay').style.display = 'block';
+    document.getElementById('popup').style.display = 'block';
 }
+
 
 // 🎯 Save booking from drag popup
 function saveBooking() {
@@ -292,9 +360,13 @@ function saveBooking() {
 }
 
 function clearSelection() {
-    selectedCells.forEach(cell => cell.classList.remove('selecting'));
+    selectedCells.forEach(cell => {
+        cell.classList.remove('selecting');
+        cell.classList.remove('deleting');
+    });
     selectedCells = [];
 }
+
 
 // 🚀 On page load
 fetchHolidays(currentDate.getFullYear()).then(fetchAndRenderBookings);
