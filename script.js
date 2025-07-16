@@ -309,40 +309,59 @@ function renderCalendar() {
 }
 
 function applyBookingToCalendar_All() {
-    // For each chamber, for each day, collect bookings
     for (let chamber = 1; chamber <= 3; chamber++) {
         document.querySelectorAll(`td[data-chamber='${chamber}']`).forEach(cell => {
             const cellDateStr = dateOnly(cell.dataset.date);
-            // All bookings that include this cell (by date)
+            // Find bookings that include this cell (by date)
             const cellBookings = allBookings.filter(b =>
                 String(b.chamber) === String(chamber) &&
                 dateOnly(b.start) <= cellDateStr &&
                 dateOnly(b.end) >= cellDateStr
             );
+
+            // Sort bookings by actual start time
+            cellBookings.sort((a, b) => new Date(a.start) - new Date(b.start));
+
             if (cellBookings.length) {
                 cell.classList.add('booking');
-                cell.innerHTML = ''; // Clear cell
-                // Split cell vertically
+                cell.innerHTML = '';
+                // Split cell horizontally
                 cell.style.display = "flex";
-                cell.style.flexDirection = "column";
+                cell.style.flexDirection = "row";
                 cell.style.padding = "0";
-                cellBookings.forEach(b => {
+                cell.style.minHeight = "48px";
+
+                let widthPct = Math.floor(100 / cellBookings.length);
+
+                cellBookings.forEach((b, idx) => {
                     const div = document.createElement('div');
                     div.style.background = b.color || "#4caf50";
-                    div.style.flex = "1";
+                    div.style.flex = `1 1 0`;
                     div.style.display = "flex";
                     div.style.flexDirection = "column";
                     div.style.justifyContent = "center";
                     div.style.alignItems = "center";
-                    div.style.borderBottom = "1px solid #fff2";
-                    div.style.fontSize = "0.9em";
+                    div.style.fontSize = "0.93em";
+                    div.style.color = "#fff";
+                    div.style.borderRight = (idx < cellBookings.length - 1) ? "2px solid #fff" : "none";
+                    div.style.minWidth = "0";
+                    div.style.overflow = "hidden";
+                    div.style.padding = "2px 2px";
+
+                    // Show time only for first/last day
+                    let timeLabel = "";
+                    if (cellDateStr === dateOnly(b.start)) {
+                        timeLabel = `from ${new Date(b.start).toTimeString().slice(0,5)}`;
+                    } else if (cellDateStr === dateOnly(b.end)) {
+                        timeLabel = `till ${new Date(b.end).toTimeString().slice(0,5)}`;
+                    } else {
+                        timeLabel = "09:00-18:00";
+                    }
+
                     div.innerHTML = `
-                        <span>${b.project}</span>
-                        <small>${b.pic}</small>
-                        <small style="font-size:0.8em">
-                            ${dateOnly(cell.dataset.date) === dateOnly(b.start) ? "from " + new Date(b.start).toTimeString().slice(0,5) : ""}
-                            ${dateOnly(cell.dataset.date) === dateOnly(b.end) ? "till " + new Date(b.end).toTimeString().slice(0,5) : ""}
-                        </small>
+                        <span style="font-weight:bold;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;">${b.project}</span>
+                        <small>${b.pic || ""}</small>
+                        <small style="font-size:0.8em">${timeLabel}</small>
                     `;
                     cell.appendChild(div);
                 });
@@ -492,7 +511,6 @@ async function processSaveBooking(booking) {
 }
 
 
-// ✅ Validate booking (prevent clashes)
 function isBookingValid(newBooking, ignoreRowKey = null) {
     const newStart = new Date(newBooking.start);
     const newEnd = new Date(newBooking.end);
@@ -504,10 +522,13 @@ function isBookingValid(newBooking, ignoreRowKey = null) {
         const existingStart = new Date(existing.start);
         const existingEnd = new Date(existing.end);
 
-        // Change here!
-        return (newStart < existingEnd && newEnd > existingStart);
+        // Allow edge-to-edge booking without overlap
+        return !(
+            newEnd <= existingStart || newStart >= existingEnd
+        );
     });
 }
+
 
 
 // ✅ Custom confirm box
