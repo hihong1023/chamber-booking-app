@@ -70,31 +70,29 @@ function formatDate(date) {
         String(date.getMonth() + 1).padStart(2, '0') + '-' +
         String(date.getDate()).padStart(2, '0');
 }
-
 function dateOnly(d) {
     if (!(d instanceof Date)) d = new Date(d);
     return d.getFullYear() + '-' +
         String(d.getMonth() + 1).padStart(2, '0') + '-' +
         String(d.getDate()).padStart(2, '0');
 }
-
 function formatDatetime(dt) {
     if (!dt) return "";
     const date = new Date(dt);
     const pad = n => String(n).padStart(2, '0');
-    return `${pad(date.getDate())}/${pad(date.getMonth()+1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    return ${pad(date.getDate())}/${pad(date.getMonth()+1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())};
 }
 
 function toDatetimeLocal(dt) {
     if (!dt) return "";
     const date = new Date(dt);
     const pad = n => String(n).padStart(2, '0');
-    return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    return ${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())};
 }
 
 function updateMonthHeader() {
     document.getElementById('currentMonth').textContent =
-        `${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()}`;
+        ${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()};
 }
 
 // ✅ Close popups
@@ -136,14 +134,14 @@ function renderColorOptions(selectedColor) {
         const btn = document.createElement('button');
         btn.type = "button";
         btn.title = opt.name;
-        btn.style.cssText = `
+        btn.style.cssText = 
             display:inline-block;
             width:28px;height:28px;
             border-radius:50%;
             border:2px solid ${selectedColor === opt.color ? "#222" : "#fff"};
             background:${opt.color};
             margin-right:7px;cursor:pointer;outline:none;
-        `;
+        ;
         if (selectedColor === opt.color) {
             btn.innerHTML = "✓";
             btn.style.color = "#fff";
@@ -175,7 +173,7 @@ function setupBookingTimeRadioEvents() {
                 let endObj = new Date(startDate + "T18:00");
                 endObj.setDate(endObj.getDate() + 1);
                 let pad = n => String(n).padStart(2, '0');
-                let eDateStr = `${endObj.getFullYear()}-${pad(endObj.getMonth()+1)}-${pad(endObj.getDate())}`;
+                let eDateStr = ${endObj.getFullYear()}-${pad(endObj.getMonth()+1)}-${pad(endObj.getDate())};
                 endField.value = eDateStr + "T09:00";
             } else if(this.value === 'all') {
                 startField.value = startDate + "T00:00";
@@ -187,7 +185,7 @@ function setupBookingTimeRadioEvents() {
 
 // ✅ Fetch public holidays
 function fetchHolidays(year) {
-    return fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/SG`)
+    return fetch(https://date.nager.at/api/v3/PublicHolidays/${year}/SG)
         .then(res => res.json())
         .then(data => {
             holidays = data.map(h => ({ date: h.date, name: h.localName }));
@@ -202,7 +200,7 @@ function fetchHolidays(year) {
 function fetchAndRenderBookings() {
     return fetch(apiBaseUrl, { method: "GET" })
         .then(res => {
-            if (!res.ok) throw new Error(`API GET failed: ${res.status}`);
+            if (!res.ok) throw new Error(API GET failed: ${res.status});
             return res.json();
         })
         .then(data => {
@@ -233,8 +231,8 @@ function renderCalendar() {
     for (let y = year - 1; y <= year + 1; y++) {
         for (let m = 0; m < 12; m++) {
             const option = document.createElement('option');
-            option.value = `${y}-${m + 1}`;
-            option.text = `${new Date(y, m).toLocaleString('default', { month: 'long' })} ${y}`;
+            option.value = ${y}-${m + 1};
+            option.text = ${new Date(y, m).toLocaleString('default', { month: 'long' })} ${y};
             if (y === year && m === month) option.selected = true;
             monthSelect.appendChild(option);
         }
@@ -253,7 +251,7 @@ function renderCalendar() {
         let dayRow = document.createElement('tr');
         let weekTitle = document.createElement('th');
         weekTitle.className = 'week-title';
-        weekTitle.innerHTML = `Week ${weekNum}: ${formatDate(startDate)} – ${formatDate(new Date(startDate.getTime() + 6 * 86400000))}`;
+        weekTitle.innerHTML = Week ${weekNum}: ${formatDate(startDate)} – ${formatDate(new Date(startDate.getTime() + 6 * 86400000))};
         dayRow.appendChild(weekTitle);
 
         for (let i = 0; i < 7; i++) {
@@ -269,14 +267,14 @@ function renderCalendar() {
             } else {
                 th.className = 'day-header';
             }
-            th.innerHTML = `${day.toLocaleString('default', { weekday: 'short' })}<br>${day.getDate()}${holiday ? `<br><small>${holiday.name}</small>` : ''}`;
+            th.innerHTML = ${day.toLocaleString('default', { weekday: 'short' })}<br>${day.getDate()}${holiday ? <br><small>${holiday.name}</small> : ''};
             dayRow.appendChild(th);
         }
         table.appendChild(dayRow);
 
         for (let chamber = 1; chamber <= 3; chamber++) {
             let row = document.createElement('tr');
-            row.innerHTML = `<td class="chamber-name">Chamber ${chamber}</td>`;
+            row.innerHTML = <td class="chamber-name">Chamber ${chamber}</td>;
             for (let i = 0; i < 7; i++) {
                 let cell = document.createElement('td');
                 let cellDate = new Date(startDate.getTime() + i * 86400000);
@@ -305,76 +303,45 @@ function renderCalendar() {
     });
     
 
-    applyBookingToCalendar_All();
+    allBookings.forEach(b => applyBookingToCalendar(b));
 }
 
-function applyBookingToCalendar_All() {
-    for (let chamber = 1; chamber <= 3; chamber++) {
-        document.querySelectorAll(`td[data-chamber='${chamber}']`).forEach(cell => {
-            const cellDateStr = dateOnly(cell.dataset.date);
-            // Find bookings that include this cell (by date)
-            const cellBookings = allBookings.filter(b =>
-                String(b.chamber) === String(chamber) &&
-                dateOnly(b.start) <= cellDateStr &&
-                dateOnly(b.end) >= cellDateStr
-            );
+function applyBookingToCalendar(booking) {
+    let startDate = new Date(booking.start);
+    let endDate = new Date(booking.end);
+    document.querySelectorAll(`td[data-chamber='${booking.chamber}']`).forEach(cell => {
+        const cellDate = new Date(cell.dataset.date);
+        // Change the logic to compare *only* dates, not times
+        if (
+            dateOnly(cellDate) >= dateOnly(startDate) &&
+            dateOnly(cellDate) <= dateOnly(endDate)
+        ) {
+            cell.classList.add('booking');
+            cell.style.backgroundColor = booking.color || '#4caf50';
+            cell.innerHTML = '';
 
-            // Sort bookings by start time (earliest on left)
-            cellBookings.sort((a, b) => new Date(a.start) - new Date(b.start));
-
-            if (cellBookings.length) {
-                cell.classList.add('booking');
-                cell.innerHTML = '';
-                // Split cell horizontally (left/right)
-                cell.style.display = "flex";
-                cell.style.flexDirection = "row";
-                cell.style.padding = "0";
-                cell.style.minHeight = "48px";
-
-                cellBookings.forEach((b, idx) => {
-                    const div = document.createElement('div');
-                    div.style.background = b.color || "#4caf50";
-                    div.style.flex = `1 1 0`;
-                    div.style.display = "flex";
-                    div.style.flexDirection = "column";
-                    div.style.justifyContent = "center";
-                    div.style.alignItems = "center";
-                    div.style.fontSize = "0.93em";
-                    div.style.color = "#fff";
-                    div.style.borderRight = (idx < cellBookings.length - 1) ? "2px solid #fff" : "none";
-                    div.style.minWidth = "0";
-                    div.style.overflow = "hidden";
-                    div.style.padding = "2px 2px";
-
-                    // Show time only for first/last day
-                    let timeLabel = "";
-                    if (cellDateStr === dateOnly(b.start)) {
-                        timeLabel = `from ${new Date(b.start).toTimeString().slice(0,5)}`;
-                    } else if (cellDateStr === dateOnly(b.end)) {
-                        timeLabel = `till ${new Date(b.end).toTimeString().slice(0,5)}`;
-                    } else {
-                        timeLabel = "09:00-18:00";
-                    }
-
-                    div.innerHTML = `
-                        <span style="font-weight:bold;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;">${b.project}</span>
-                        <small>${b.pic || ""}</small>
-                        <small style="font-size:0.8em">${timeLabel}</small>
-                    `;
-                    cell.appendChild(div);
-                });
+            let projectSpan = document.createElement('span');
+            projectSpan.textContent = booking.project;
+            let br = document.createElement('br');
+            let timeLabel = document.createElement('small');
+            // Show time only for start/end days
+            if (dateOnly(cellDate) === dateOnly(startDate)) {
+                timeLabel.textContent = `from ${startDate.toTimeString().slice(0,5)}`;
+            } else if (dateOnly(cellDate) === dateOnly(endDate)) {
+                timeLabel.textContent = `till ${endDate.toTimeString().slice(0,5)}`;
             } else {
-                cell.classList.remove('booking');
-                cell.style.background = '';
-                cell.style.display = '';
-                cell.innerHTML = '';
+                timeLabel.textContent = "09:00-18:00";
             }
-        });
-    }
+            cell.appendChild(projectSpan);
+            cell.appendChild(br);
+            cell.appendChild(timeLabel);
+            cell.appendChild(document.createElement('br'));
+            let picSmall = document.createElement('small');
+            picSmall.textContent = booking.pic;
+            cell.appendChild(picSmall);
+        }
+    });
 }
-
-
-
 
 
 
@@ -406,9 +373,9 @@ function openManualBookingPopup(booking = null) {
         // Default: today 09:00–18:00
         const now = new Date();
         const pad = n => String(n).padStart(2, '0');
-        const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-        document.getElementById('manualStart').value = `${dateStr}T09:00`;
-        document.getElementById('manualEnd').value = `${dateStr}T18:00`;
+        const dateStr = ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())};
+        document.getElementById('manualStart').value = ${dateStr}T09:00;
+        document.getElementById('manualEnd').value = ${dateStr}T18:00;
         document.getElementById('manualProject').value = "";
         document.getElementById('manualPic').value = "";
         document.getElementById('manualColor').value = "#4caf50";
@@ -456,7 +423,7 @@ async function processSaveBooking(booking) {
         (booking.start !== editingBooking.start || booking.chamber !== editingBooking.chamber)) {
         try {
             // 1. Delete old booking by rowKey
-            await fetch(`${apiBaseUrl}?rowKey=${editingBooking.rowKey}`, { method: "DELETE" });
+            await fetch(${apiBaseUrl}?rowKey=${editingBooking.rowKey}, { method: "DELETE" });
 
             // 2. Create new booking
             let res = await fetch(apiBaseUrl, {
@@ -479,7 +446,7 @@ async function processSaveBooking(booking) {
     if (editingBooking) {
         booking.rowKey = editingBooking.rowKey;
         try {
-            let res = await fetch(`${apiBaseUrl}?rowKey=${booking.rowKey}`, {
+            let res = await fetch(${apiBaseUrl}?rowKey=${booking.rowKey}, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(booking)
@@ -510,24 +477,21 @@ async function processSaveBooking(booking) {
 }
 
 
+// ✅ Validate booking (prevent clashes)
 function isBookingValid(newBooking, ignoreRowKey = null) {
     const newStart = new Date(newBooking.start);
     const newEnd = new Date(newBooking.end);
 
     return !allBookings.some(existing => {
         if (ignoreRowKey && existing.rowKey === ignoreRowKey) return false;
-        if (String(existing.chamber) !== String(newBooking.chamber)) return false;
+        if (existing.chamber !== newBooking.chamber) return false;
 
         const existingStart = new Date(existing.start);
         const existingEnd = new Date(existing.end);
 
-        // Only detect as overlap if actual overlap (not just touching ends)
-        return (newStart < existingEnd && newEnd > existingStart);
+        return (newStart <= existingEnd && newEnd >= existingStart);
     });
 }
-
-
-
 
 // ✅ Custom confirm box
 function showConfirm(message, onConfirm) {
@@ -559,7 +523,7 @@ function displayAllBookings() {
     for (let chamber = 1; chamber <= 3; chamber++) {
         const section = document.createElement('div');
         section.className = 'chamber-section';
-        section.innerHTML = `<h4>Chamber ${chamber}</h4>`;
+        section.innerHTML = <h4>Chamber ${chamber}</h4>;
 
         const chamberBookings = allBookings
             .filter(b => String(b.chamber) == String(chamber))
@@ -575,7 +539,7 @@ function displayAllBookings() {
                 const item = document.createElement('div');
                 item.className = 'booking-item';
                 item.innerHTML =
-                    `<div class="top-row">
+                    <div class="top-row">
                         <span class="name"></span>
                         <span class="pic"></span>
                     </div>
@@ -585,12 +549,12 @@ function displayAllBookings() {
                             <button class="edit-btn">Edit</button>
                             <button class="delete-btn">Delete</button>
                         </div>
-                    </div>`;
+                    </div>;
 
                 item.querySelector('.name').textContent = b.project;
                 item.querySelector('.pic').textContent = b.pic;
                 item.querySelector('.date').textContent = 
-                    `${formatDatetime(b.start)} to ${formatDatetime(b.end)}`;
+                    ${formatDatetime(b.start)} to ${formatDatetime(b.end)};
 
 
 
@@ -601,8 +565,8 @@ function displayAllBookings() {
 
                 // 🗑️ Delete button
                 item.querySelector('.delete-btn').addEventListener('click', () => {
-                    showConfirm(`Delete booking for "${b.project}"?`, async () => {
-                        await fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, { method: "DELETE" });
+                    showConfirm(Delete booking for "${b.project}"?, async () => {
+                        await fetch(${apiBaseUrl}?rowKey=${b.rowKey}, { method: "DELETE" });
                         closeViewBookings();
                         fetchAndRenderBookings();
                         showTeamsNotification("Booking deleted.", "success");
