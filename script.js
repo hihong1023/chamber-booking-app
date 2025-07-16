@@ -71,6 +71,13 @@ function formatDate(date) {
         String(date.getDate()).padStart(2, '0');
 }
 
+function dateOnly(d) {
+    if (!(d instanceof Date)) d = new Date(d);
+    return d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
+}
+
 function formatDatetime(dt) {
     if (!dt) return "";
     const date = new Date(dt);
@@ -306,7 +313,11 @@ function applyBookingToCalendar(booking) {
     let endDate = new Date(booking.end);
     document.querySelectorAll(`td[data-chamber='${booking.chamber}']`).forEach(cell => {
         const cellDate = new Date(cell.dataset.date);
-        if (cellDate >= new Date(startDate.toDateString()) && cellDate <= new Date(endDate.toDateString())) {
+        // Change the logic to compare *only* dates, not times
+        if (
+            dateOnly(cellDate) >= dateOnly(startDate) &&
+            dateOnly(cellDate) <= dateOnly(endDate)
+        ) {
             cell.classList.add('booking');
             cell.style.backgroundColor = booking.color || '#4caf50';
             cell.innerHTML = '';
@@ -316,12 +327,12 @@ function applyBookingToCalendar(booking) {
             let br = document.createElement('br');
             let timeLabel = document.createElement('small');
             // Show time only for start/end days
-            if (cellDate.toDateString() === startDate.toDateString()) {
+            if (dateOnly(cellDate) === dateOnly(startDate)) {
                 timeLabel.textContent = `from ${startDate.toTimeString().slice(0,5)}`;
-            } else if (cellDate.toDateString() === endDate.toDateString()) {
+            } else if (dateOnly(cellDate) === dateOnly(endDate)) {
                 timeLabel.textContent = `till ${endDate.toTimeString().slice(0,5)}`;
             } else {
-                timeLabel.textContent = "09:00-18:00"; // or your default working hours, or "All day"
+                timeLabel.textContent = "09:00-18:00";
             }
             cell.appendChild(projectSpan);
             cell.appendChild(br);
@@ -333,6 +344,7 @@ function applyBookingToCalendar(booking) {
         }
     });
 }
+
 
 
 
