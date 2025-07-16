@@ -176,7 +176,7 @@ function setupBookingTimeRadioEvents() {
                 let endObj = new Date(startDate + "T18:00");
                 endObj.setDate(endObj.getDate() + 1);
                 let pad = n => String(n).padStart(2, '0');
-                let eDateStr = ${endObj.getFullYear()}-${pad(endObj.getMonth()+1)}-${pad(endObj.getDate())};
+                let eDateStr = `${endObj.getFullYear()}-${pad(endObj.getMonth()+1)}-${pad(endObj.getDate())}`;
                 endField.value = eDateStr + "T09:00";
             } else if(this.value === 'all') {
                 startField.value = startDate + "T00:00";
@@ -188,7 +188,7 @@ function setupBookingTimeRadioEvents() {
 
 // ✅ Fetch public holidays
 function fetchHolidays(year) {
-    return fetch(https://date.nager.at/api/v3/PublicHolidays/${year}/SG)
+    return fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/SG`)
         .then(res => res.json())
         .then(data => {
             holidays = data.map(h => ({ date: h.date, name: h.localName }));
@@ -203,7 +203,7 @@ function fetchHolidays(year) {
 function fetchAndRenderBookings() {
     return fetch(apiBaseUrl, { method: "GET" })
         .then(res => {
-            if (!res.ok) throw new Error(API GET failed: ${res.status});
+            if (!res.ok) throw new Error(`API GET failed: ${res.status}`);
             return res.json();
         })
         .then(data => {
@@ -426,7 +426,7 @@ async function processSaveBooking(booking) {
         (booking.start !== editingBooking.start || booking.chamber !== editingBooking.chamber)) {
         try {
             // 1. Delete old booking by rowKey
-            await fetch(${apiBaseUrl}?rowKey=${editingBooking.rowKey}, { method: "DELETE" });
+            await fetch(`${apiBaseUrl}?rowKey=${editingBooking.rowKey}`, { method: "DELETE" });
 
             // 2. Create new booking
             let res = await fetch(apiBaseUrl, {
@@ -449,7 +449,7 @@ async function processSaveBooking(booking) {
     if (editingBooking) {
         booking.rowKey = editingBooking.rowKey;
         try {
-            let res = await fetch(${apiBaseUrl}?rowKey=${booking.rowKey}, {
+            let res = await fetch(`${apiBaseUrl}?rowKey=${booking.rowKey}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(booking)
@@ -542,7 +542,7 @@ function displayAllBookings() {
                 const item = document.createElement('div');
                 item.className = 'booking-item';
                 item.innerHTML =
-                    <div class="top-row">
+                    `<div class="top-row">
                         <span class="name"></span>
                         <span class="pic"></span>
                     </div>
@@ -552,12 +552,13 @@ function displayAllBookings() {
                             <button class="edit-btn">Edit</button>
                             <button class="delete-btn">Delete</button>
                         </div>
-                    </div>;
+                    </div>`;
+
 
                 item.querySelector('.name').textContent = b.project;
                 item.querySelector('.pic').textContent = b.pic;
                 item.querySelector('.date').textContent = 
-                    ${formatDatetime(b.start)} to ${formatDatetime(b.end)};
+                    `${formatDatetime(b.start)} to ${formatDatetime(b.end)}`;
 
 
 
@@ -568,7 +569,7 @@ function displayAllBookings() {
 
                 // 🗑️ Delete button
                 item.querySelector('.delete-btn').addEventListener('click', () => {
-                    showConfirm(Delete booking for "${b.project}"?, async () => {
+                    showConfirm(`Delete booking for "${b.project}"?`, async () => {
                         await fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, { method: "DELETE" });
                         closeViewBookings();
                         fetchAndRenderBookings();
