@@ -36,7 +36,13 @@
     <input type="date" id="manualEnd">
     <input type="text" id="manualProject" placeholder="Project Name">
     <input type="text" id="manualPic" placeholder="Person in Charge (PIC)">
-    <input type="color" id="manualColor" value="#4caf50">
+    <div id="manualColorPicker">
+      <span>Select Color:</span>
+      <div id="colorOptions" style="display:inline-block;margin-left:8px;">
+        <!-- Color buttons will be added by JS -->
+      </div>
+      <input type="hidden" id="manualColor" value="#4caf50">
+    </div>
     <button onclick="saveManualBooking()">Save Booking</button>
     <button onclick="closeManualPopup()">Cancel</button>
 </div>
