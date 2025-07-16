@@ -34,6 +34,21 @@
     <input type="datetime-local" id="manualStart">
     <label for="manualEnd">End Date & Time:</label>
     <input type="datetime-local" id="manualEnd">
+    <div style="margin-bottom:8px;">
+      <label><b>Quick Set Time:</b></label><br>
+      <label style="margin-right:16px;">
+        <input type="radio" name="bookingTimeType" value="office" checked>
+        Office Hour (09:00-18:00)
+      </label>
+      <label style="margin-right:16px;">
+        <input type="radio" name="bookingTimeType" value="off">
+        Off Office Hour (18:00-09:00)
+      </label>
+      <label>
+        <input type="radio" name="bookingTimeType" value="all">
+        Whole Day (00:00-23:59)
+      </label>
+    </div>
     <input type="text" id="manualProject" placeholder="Project Name">
     <input type="text" id="manualPic" placeholder="Person in Charge (PIC)">
     <div id="manualColorPicker">
