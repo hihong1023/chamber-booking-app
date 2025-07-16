@@ -305,45 +305,57 @@ function renderCalendar() {
     });
     
 
-    allBookings.forEach(b => applyBookingToCalendar(b));
+    applyBookingToCalendar_All();
 }
 
-function applyBookingToCalendar(booking) {
-    let startDate = new Date(booking.start);
-    let endDate = new Date(booking.end);
-    document.querySelectorAll(`td[data-chamber='${booking.chamber}']`).forEach(cell => {
-        const cellDate = new Date(cell.dataset.date);
-        // Change the logic to compare *only* dates, not times
-        if (
-            dateOnly(cellDate) >= dateOnly(startDate) &&
-            dateOnly(cellDate) <= dateOnly(endDate)
-        ) {
-            cell.classList.add('booking');
-            cell.style.backgroundColor = booking.color || '#4caf50';
-            cell.innerHTML = '';
-
-            let projectSpan = document.createElement('span');
-            projectSpan.textContent = booking.project;
-            let br = document.createElement('br');
-            let timeLabel = document.createElement('small');
-            // Show time only for start/end days
-            if (dateOnly(cellDate) === dateOnly(startDate)) {
-                timeLabel.textContent = `from ${startDate.toTimeString().slice(0,5)}`;
-            } else if (dateOnly(cellDate) === dateOnly(endDate)) {
-                timeLabel.textContent = `till ${endDate.toTimeString().slice(0,5)}`;
+function applyBookingToCalendar_All() {
+    // For each chamber, for each day, collect bookings
+    for (let chamber = 1; chamber <= 3; chamber++) {
+        document.querySelectorAll(`td[data-chamber='${chamber}']`).forEach(cell => {
+            const cellDateStr = dateOnly(cell.dataset.date);
+            // All bookings that include this cell (by date)
+            const cellBookings = allBookings.filter(b =>
+                String(b.chamber) === String(chamber) &&
+                dateOnly(b.start) <= cellDateStr &&
+                dateOnly(b.end) >= cellDateStr
+            );
+            if (cellBookings.length) {
+                cell.classList.add('booking');
+                cell.innerHTML = ''; // Clear cell
+                // Split cell vertically
+                cell.style.display = "flex";
+                cell.style.flexDirection = "column";
+                cell.style.padding = "0";
+                cellBookings.forEach(b => {
+                    const div = document.createElement('div');
+                    div.style.background = b.color || "#4caf50";
+                    div.style.flex = "1";
+                    div.style.display = "flex";
+                    div.style.flexDirection = "column";
+                    div.style.justifyContent = "center";
+                    div.style.alignItems = "center";
+                    div.style.borderBottom = "1px solid #fff2";
+                    div.style.fontSize = "0.9em";
+                    div.innerHTML = `
+                        <span>${b.project}</span>
+                        <small>${b.pic}</small>
+                        <small style="font-size:0.8em">
+                            ${dateOnly(cell.dataset.date) === dateOnly(b.start) ? "from " + new Date(b.start).toTimeString().slice(0,5) : ""}
+                            ${dateOnly(cell.dataset.date) === dateOnly(b.end) ? "till " + new Date(b.end).toTimeString().slice(0,5) : ""}
+                        </small>
+                    `;
+                    cell.appendChild(div);
+                });
             } else {
-                timeLabel.textContent = "09:00-18:00";
+                cell.classList.remove('booking');
+                cell.style.background = '';
+                cell.style.display = '';
+                cell.innerHTML = '';
             }
-            cell.appendChild(projectSpan);
-            cell.appendChild(br);
-            cell.appendChild(timeLabel);
-            cell.appendChild(document.createElement('br'));
-            let picSmall = document.createElement('small');
-            picSmall.textContent = booking.pic;
-            cell.appendChild(picSmall);
-        }
-    });
+        });
+    }
 }
+
 
 
 
@@ -487,14 +499,16 @@ function isBookingValid(newBooking, ignoreRowKey = null) {
 
     return !allBookings.some(existing => {
         if (ignoreRowKey && existing.rowKey === ignoreRowKey) return false;
-        if (existing.chamber !== newBooking.chamber) return false;
+        if (String(existing.chamber) !== String(newBooking.chamber)) return false;
 
         const existingStart = new Date(existing.start);
         const existingEnd = new Date(existing.end);
 
-        return (newStart <= existingEnd && newEnd >= existingStart);
+        // Change here!
+        return (newStart < existingEnd && newEnd > existingStart);
     });
 }
+
 
 // ✅ Custom confirm box
 function showConfirm(message, onConfirm) {
