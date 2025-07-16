@@ -326,15 +326,11 @@ function applyBookingToCalendar(booking) {
             let projectSpan = document.createElement('span');
             projectSpan.textContent = booking.project;
             let br = document.createElement('br');
+
+            // Always show 09:00-18:00
             let timeLabel = document.createElement('small');
-            // Show time only for start/end days
-            if (dateOnly(cellDate) === dateOnly(startDate)) {
-                timeLabel.textContent = `from ${startDate.toTimeString().slice(0,5)}`;
-            } else if (dateOnly(cellDate) === dateOnly(endDate)) {
-                timeLabel.textContent = `till ${endDate.toTimeString().slice(0,5)}`;
-            } else {
-                timeLabel.textContent = "09:00-18:00";
-            }
+            timeLabel.textContent = "09:00-18:00";
+
             cell.appendChild(projectSpan);
             cell.appendChild(br);
             cell.appendChild(timeLabel);
@@ -345,6 +341,7 @@ function applyBookingToCalendar(booking) {
         }
     });
 }
+
 
 
 
