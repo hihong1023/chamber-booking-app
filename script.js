@@ -71,6 +71,12 @@ function formatDate(date) {
         String(date.getDate()).padStart(2, '0');
 }
 
+function formatDatetime(dt) {
+    if (!dt) return "";
+    const date = new Date(dt);
+    const pad = n => String(n).padStart(2, '0');
+    return `${pad(date.getDate())}/${pad(date.getMonth()+1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 function toDatetimeLocal(dt) {
     if (!dt) return "";
@@ -511,12 +517,9 @@ function displayAllBookings() {
 
                 item.querySelector('.name').textContent = b.project;
                 item.querySelector('.pic').textContent = b.pic;
-                function formatDatetime(dt) {
-                    if (!dt) return "";
-                    const date = new Date(dt);
-                    const pad = n => String(n).padStart(2, '0');
-                    return `${pad(date.getDate())}/${pad(date.getMonth()+1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-                }
+                item.querySelector('.date').textContent = 
+                    `${formatDatetime(b.start)} to ${formatDatetime(b.end)}`;
+
 
 
                 // 📝 Edit button
