@@ -234,8 +234,8 @@ function renderCalendar() {
     for (let y = year - 1; y <= year + 1; y++) {
         for (let m = 0; m < 12; m++) {
             const option = document.createElement('option');
-            option.value = ${y}-${m + 1};
-            option.text = ${new Date(y, m).toLocaleString('default', { month: 'long' })} ${y};
+            option.value = `${y}-${m + 1}`;
+            option.text = `${new Date(y, m).toLocaleString('default', { month: 'long' })} ${y}`;
             if (y === year && m === month) option.selected = true;
             monthSelect.appendChild(option);
         }
@@ -254,7 +254,7 @@ function renderCalendar() {
         let dayRow = document.createElement('tr');
         let weekTitle = document.createElement('th');
         weekTitle.className = 'week-title';
-        weekTitle.innerHTML = Week ${weekNum}: ${formatDate(startDate)} – ${formatDate(new Date(startDate.getTime() + 6 * 86400000))};
+        weekTitle.innerHTML = `Week ${weekNum}: ${formatDate(startDate)} – ${formatDate(new Date(startDate.getTime() + 6 * 86400000))}`;
         dayRow.appendChild(weekTitle);
 
         for (let i = 0; i < 7; i++) {
@@ -270,7 +270,7 @@ function renderCalendar() {
             } else {
                 th.className = 'day-header';
             }
-            th.innerHTML = ${day.toLocaleString('default', { weekday: 'short' })}<br>${day.getDate()}${holiday ? <br><small>${holiday.name}</small> : ''};
+            th.innerHTML = `${day.toLocaleString('default', { weekday: 'short' })}<br>${day.getDate()}${holiday ? `<br><small>${holiday.name}</small>` : ''}`;
             dayRow.appendChild(th);
         }
         table.appendChild(dayRow);
@@ -376,9 +376,9 @@ function openManualBookingPopup(booking = null) {
         // Default: today 09:00–18:00
         const now = new Date();
         const pad = n => String(n).padStart(2, '0');
-        const dateStr = ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())};
-        document.getElementById('manualStart').value = ${dateStr}T09:00;
-        document.getElementById('manualEnd').value = ${dateStr}T18:00;
+        const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        document.getElementById('manualStart').value = `${dateStr}T09:00`;
+        document.getElementById('manualEnd').value = `${dateStr}T18:00`;
         document.getElementById('manualProject').value = "";
         document.getElementById('manualPic').value = "";
         document.getElementById('manualColor').value = "#4caf50";
