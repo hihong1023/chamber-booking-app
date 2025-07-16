@@ -319,19 +319,17 @@ function applyBookingToCalendar_All() {
                 dateOnly(b.end) >= cellDateStr
             );
 
-            // Sort bookings by actual start time
+            // Sort bookings by start time (earliest on left)
             cellBookings.sort((a, b) => new Date(a.start) - new Date(b.start));
 
             if (cellBookings.length) {
                 cell.classList.add('booking');
                 cell.innerHTML = '';
-                // Split cell horizontally
+                // Split cell horizontally (left/right)
                 cell.style.display = "flex";
                 cell.style.flexDirection = "row";
                 cell.style.padding = "0";
                 cell.style.minHeight = "48px";
-
-                let widthPct = Math.floor(100 / cellBookings.length);
 
                 cellBookings.forEach((b, idx) => {
                     const div = document.createElement('div');
@@ -374,6 +372,7 @@ function applyBookingToCalendar_All() {
         });
     }
 }
+
 
 
 
@@ -522,12 +521,11 @@ function isBookingValid(newBooking, ignoreRowKey = null) {
         const existingStart = new Date(existing.start);
         const existingEnd = new Date(existing.end);
 
-        // Allow edge-to-edge booking without overlap
-        return !(
-            newEnd <= existingStart || newStart >= existingEnd
-        );
+        // Only detect as overlap if actual overlap (not just touching ends)
+        return (newStart < existingEnd && newEnd > existingStart);
     });
 }
+
 
 
 
