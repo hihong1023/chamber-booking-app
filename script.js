@@ -152,6 +152,32 @@ function renderColorOptions(selectedColor) {
     });
 }
 
+function setupBookingTimeRadioEvents() {
+    document.querySelectorAll('input[name="bookingTimeType"]').forEach(rb => {
+        rb.addEventListener('change', function() {
+            const startField = document.getElementById('manualStart');
+            const endField = document.getElementById('manualEnd');
+            const startDate = (startField.value || '').split("T")[0];
+            const endDate = (endField.value || '').split("T")[0] || startDate;
+            if(this.value === 'office') {
+                startField.value = startDate + "T09:00";
+                endField.value = endDate + "T18:00";
+            } else if(this.value === 'off') {
+                startField.value = startDate + "T18:00";
+                // End date + 1 for overnight
+                let endObj = new Date(startDate + "T18:00");
+                endObj.setDate(endObj.getDate() + 1);
+                let pad = n => String(n).padStart(2, '0');
+                let eDateStr = `${endObj.getFullYear()}-${pad(endObj.getMonth()+1)}-${pad(endObj.getDate())}`;
+                endField.value = eDateStr + "T09:00";
+            } else if(this.value === 'all') {
+                startField.value = startDate + "T00:00";
+                endField.value = endDate + "T23:59";
+            }
+        });
+    });
+}
+
 // ✅ Fetch public holidays
 function fetchHolidays(year) {
     return fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/SG`)
@@ -346,6 +372,7 @@ function openManualBookingPopup(booking = null) {
         document.getElementById('manualColor').value = "#4caf50";
         renderColorOptions("#4caf50");
         editingBooking = null;
+        setupBookingTimeRadioEvents();
     }
 }
 
@@ -490,7 +517,7 @@ function displayAllBookings() {
         section.innerHTML = `<h4>Chamber ${chamber}</h4>`;
 
         const chamberBookings = allBookings
-            .filter(b => b.chamber == chamber)
+            .filter(b => String(b.chamber) == String(chamber))
             .sort((a, b) => new Date(a.start) - new Date(b.start));
 
         if (chamberBookings.length === 0) {
