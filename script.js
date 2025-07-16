@@ -71,6 +71,14 @@ function formatDate(date) {
         String(date.getDate()).padStart(2, '0');
 }
 
+
+function toDatetimeLocal(dt) {
+    if (!dt) return "";
+    const date = new Date(dt);
+    const pad = n => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 function updateMonthHeader() {
     document.getElementById('currentMonth').textContent =
         `${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()}`;
@@ -266,23 +274,34 @@ function applyBookingToCalendar(booking) {
     let endDate = new Date(booking.end);
     document.querySelectorAll(`td[data-chamber='${booking.chamber}']`).forEach(cell => {
         const cellDate = new Date(cell.dataset.date);
-        if (cellDate >= startDate && cellDate <= endDate) {
+        if (cellDate >= new Date(startDate.toDateString()) && cellDate <= new Date(endDate.toDateString())) {
             cell.classList.add('booking');
             cell.style.backgroundColor = booking.color || '#4caf50';
             cell.innerHTML = '';
+
             let projectSpan = document.createElement('span');
             projectSpan.textContent = booking.project;
             let br = document.createElement('br');
-            let picSmall = document.createElement('small');
-            picSmall.textContent = booking.pic;
+            let timeLabel = document.createElement('small');
+            // Show time only for start/end days
+            if (cellDate.toDateString() === startDate.toDateString()) {
+                timeLabel.textContent = `from ${startDate.toTimeString().slice(0,5)}`;
+            } else if (cellDate.toDateString() === endDate.toDateString()) {
+                timeLabel.textContent = `till ${endDate.toTimeString().slice(0,5)}`;
+            } else {
+                timeLabel.textContent = "09:00-18:00"; // or your default working hours, or "All day"
+            }
             cell.appendChild(projectSpan);
             cell.appendChild(br);
+            cell.appendChild(timeLabel);
+            cell.appendChild(document.createElement('br'));
+            let picSmall = document.createElement('small');
+            picSmall.textContent = booking.pic;
             cell.appendChild(picSmall);
         }
-        // ⚠️ Do NOT clear cell content if not in this booking range!
-        // (No else block here!)
     });
 }
+
 
 
 // ✅ Holiday Check Utility
@@ -301,8 +320,8 @@ function openManualBookingPopup(booking = null) {
 
     if (booking) {
         document.getElementById('manualChamber').value = booking.chamber;
-        document.getElementById('manualStart').value = booking.start;
-        document.getElementById('manualEnd').value = booking.end;
+        document.getElementById('manualStart').value = toDatetimeLocal(booking.start);
+        document.getElementById('manualEnd').value = toDatetimeLocal(booking.end);
         document.getElementById('manualProject').value = booking.project;
         document.getElementById('manualPic').value = booking.pic;
         document.getElementById('manualColor').value = booking.color;
@@ -310,8 +329,12 @@ function openManualBookingPopup(booking = null) {
         editingBooking = booking;
     } else {
         document.getElementById('manualChamber').value = "1";
-        document.getElementById('manualStart').value = "";
-        document.getElementById('manualEnd').value = "";
+        // Default: today 09:00–18:00
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        document.getElementById('manualStart').value = `${dateStr}T09:00`;
+        document.getElementById('manualEnd').value = `${dateStr}T18:00`;
         document.getElementById('manualProject').value = "";
         document.getElementById('manualPic').value = "";
         document.getElementById('manualColor').value = "#4caf50";
@@ -319,6 +342,7 @@ function openManualBookingPopup(booking = null) {
         editingBooking = null;
     }
 }
+
 
 function saveManualBooking() {
     const booking = {
@@ -331,11 +355,11 @@ function saveManualBooking() {
     };
 
     if (new Date(booking.start) > new Date(booking.end)) {
-        showTeamsNotification("Start date cannot be after end date.", "error");
+        showTeamsNotification("Start date/time cannot be after end date/time.", "error");
         return;
     }
 
-    // 🟢 NEW: Overlap check comes BEFORE any booking is saved/confirmed
+    // 🟢 Overlap check BEFORE saving/confirming
     if (!isBookingValid(booking, editingBooking ? editingBooking.rowKey : null)) {
         showTeamsNotification("Booking overlaps with another booking for this chamber.", "error");
         return;
@@ -347,6 +371,7 @@ function saveManualBooking() {
         processSaveBooking(booking);
     }
 }
+
 
 
 
@@ -486,7 +511,13 @@ function displayAllBookings() {
 
                 item.querySelector('.name').textContent = b.project;
                 item.querySelector('.pic').textContent = b.pic;
-                item.querySelector('.date').textContent = `${b.start} to ${b.end}`;
+                function formatDatetime(dt) {
+                    if (!dt) return "";
+                    const date = new Date(dt);
+                    const pad = n => String(n).padStart(2, '0');
+                    return `${pad(date.getDate())}/${pad(date.getMonth()+1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+                }
+
 
                 // 📝 Edit button
                 item.querySelector('.edit-btn').addEventListener('click', () => {
