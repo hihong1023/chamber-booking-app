@@ -39,6 +39,15 @@ let editingBooking = null; // Track edit mode
 
 const apiBaseUrl = "/api/BookingApi";
 
+const colorPalette = [
+    { color: "#4caf50", name: "Green" },   // default
+    { color: "#2196f3", name: "Blue" },
+    { color: "#ff9800", name: "Orange" },
+    { color: "#ab47bc", name: "Purple" },
+    { color: "#e53935", name: "Red" },
+    { color: "#757575", name: "Gray" }
+];
+
 // ✅ Open "Add Booking" popup
 document.getElementById('addBookingBtn').addEventListener('click', () => {
     openManualBookingPopup();
@@ -98,6 +107,36 @@ document.getElementById('monthSelect').addEventListener('change', (e) => {
     updateMonthHeader();
     fetchHolidays(currentDate.getFullYear()).then(fetchAndRenderBookings);
 });
+
+function renderColorOptions(selectedColor) {
+    const colorOptions = document.getElementById('colorOptions');
+    colorOptions.innerHTML = '';
+    colorPalette.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.type = "button";
+        btn.title = opt.name;
+        btn.style.cssText = `
+            display:inline-block;
+            width:28px;height:28px;
+            border-radius:50%;
+            border:2px solid ${selectedColor === opt.color ? "#222" : "#fff"};
+            background:${opt.color};
+            margin-right:7px;cursor:pointer;outline:none;
+        `;
+        if (selectedColor === opt.color) {
+            btn.innerHTML = "✓";
+            btn.style.color = "#fff";
+            btn.style.fontWeight = "bold";
+            btn.style.fontSize = "1rem";
+            btn.style.textAlign = "center";
+        }
+        btn.addEventListener('click', () => {
+            document.getElementById('manualColor').value = opt.color;
+            renderColorOptions(opt.color);
+        });
+        colorOptions.appendChild(btn);
+    });
+}
 
 // ✅ Fetch public holidays
 function fetchHolidays(year) {
@@ -267,6 +306,7 @@ function openManualBookingPopup(booking = null) {
         document.getElementById('manualProject').value = booking.project;
         document.getElementById('manualPic').value = booking.pic;
         document.getElementById('manualColor').value = booking.color;
+        renderColorOptions(booking.color || "#4caf50");
         editingBooking = booking;
     } else {
         document.getElementById('manualChamber').value = "1";
@@ -275,6 +315,7 @@ function openManualBookingPopup(booking = null) {
         document.getElementById('manualProject').value = "";
         document.getElementById('manualPic').value = "";
         document.getElementById('manualColor').value = "#4caf50";
+        renderColorOptions("#4caf50");
         editingBooking = null;
     }
 }
