@@ -80,20 +80,22 @@ function formatDatetime(dt) {
     if (!dt) return "";
     const date = new Date(dt);
     const pad = n => String(n).padStart(2, '0');
-    return ${pad(date.getDate())}/${pad(date.getMonth()+1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())};
+    return `${pad(date.getDate())}/${pad(date.getMonth()+1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
+
 
 function toDatetimeLocal(dt) {
     if (!dt) return "";
     const date = new Date(dt);
     const pad = n => String(n).padStart(2, '0');
-    return ${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())};
+    return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 function updateMonthHeader() {
     document.getElementById('currentMonth').textContent =
-        ${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()};
+        `${currentDate.toLocaleString('default', { month: 'long' })} ${currentDate.getFullYear()}`;
 }
+
 
 // ✅ Close popups
 function closeManualPopup() {
@@ -134,14 +136,15 @@ function renderColorOptions(selectedColor) {
         const btn = document.createElement('button');
         btn.type = "button";
         btn.title = opt.name;
-        btn.style.cssText = 
+        btn.style.cssText = `
             display:inline-block;
             width:28px;height:28px;
             border-radius:50%;
             border:2px solid ${selectedColor === opt.color ? "#222" : "#fff"};
             background:${opt.color};
             margin-right:7px;cursor:pointer;outline:none;
-        ;
+        `;
+
         if (selectedColor === opt.color) {
             btn.innerHTML = "✓";
             btn.style.color = "#fff";
@@ -274,7 +277,7 @@ function renderCalendar() {
 
         for (let chamber = 1; chamber <= 3; chamber++) {
             let row = document.createElement('tr');
-            row.innerHTML = <td class="chamber-name">Chamber ${chamber}</td>;
+            row.innerHTML = `<td class="chamber-name">Chamber ${chamber}</td>`;
             for (let i = 0; i < 7; i++) {
                 let cell = document.createElement('td');
                 let cellDate = new Date(startDate.getTime() + i * 86400000);
@@ -523,7 +526,7 @@ function displayAllBookings() {
     for (let chamber = 1; chamber <= 3; chamber++) {
         const section = document.createElement('div');
         section.className = 'chamber-section';
-        section.innerHTML = <h4>Chamber ${chamber}</h4>;
+        section.innerHTML = `<h4>Chamber ${chamber}</h4>`;
 
         const chamberBookings = allBookings
             .filter(b => String(b.chamber) == String(chamber))
@@ -566,7 +569,7 @@ function displayAllBookings() {
                 // 🗑️ Delete button
                 item.querySelector('.delete-btn').addEventListener('click', () => {
                     showConfirm(Delete booking for "${b.project}"?, async () => {
-                        await fetch(${apiBaseUrl}?rowKey=${b.rowKey}, { method: "DELETE" });
+                        await fetch(`${apiBaseUrl}?rowKey=${b.rowKey}`, { method: "DELETE" });
                         closeViewBookings();
                         fetchAndRenderBookings();
                         showTeamsNotification("Booking deleted.", "success");
